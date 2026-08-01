@@ -1,14 +1,24 @@
+/*
+ * Every colour, font, and prose size routes through a custom property that
+ * theme.ts sets on :root at runtime. The values here are only the fallbacks
+ * used for the first paint, before settings load.
+ */
 :root {
   --paper: #fbf9f6;
   --card: #ffffff;
+  --sidebar: #f6f2ec;
+  --chip-hover: #ece4d9;
   --ink: #23201c;
   --ink-soft: #6b635a;
   --line: #e5ded4;
   --accent: #9a4f2b;
   --accent-soft: #f2e6df;
+  --accent-ink: #6f3a1f;
   --danger: #a33224;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-recipe: var(--serif);
+  --text-scale: 1;
 }
 
 * {
@@ -25,7 +35,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
   color: inherit;
 }
@@ -45,7 +56,7 @@ textarea {
   gap: 10px;
   padding: 44px 12px 12px;
   border-right: 1px solid var(--line);
-  background: #f6f2ec;
+  background: var(--sidebar);
   overflow-y: auto;
 }
 
@@ -113,7 +124,7 @@ textarea {
 }
 
 .recipe-chip:hover {
-  background: #ece4d9;
+  background: var(--chip-hover);
 }
 
 .recipe-chip--active {
@@ -232,17 +243,20 @@ textarea {
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  border: 1px solid var(--line);
+  background: var(--card);
 }
 
 .banner--note {
-  background: #fdf5e7;
-  border: 1px solid #e8d5ac;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
 .banner--error {
-  background: #fbecea;
-  border: 1px solid #e8bdb6;
-  color: #7d2418;
+  border-color: var(--danger);
+  background: var(--card);
+  color: var(--danger);
 }
 
 .banner__close {
@@ -264,7 +278,7 @@ textarea {
 }
 
 .empty h1 {
-  font-family: var(--serif);
+  font-family: var(--font-recipe);
   font-size: 34px;
   font-weight: 400;
   color: var(--ink);
@@ -288,8 +302,8 @@ textarea {
 }
 
 .recipe__title {
-  font-family: var(--serif);
-  font-size: 33px;
+  font-family: var(--font-recipe);
+  font-size: calc(33px * var(--text-scale));
   font-weight: 400;
   line-height: 1.2;
   margin: 0 0 8px;
@@ -323,12 +337,12 @@ textarea {
   padding: 4px 9px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: #6f3a1f;
+  color: var(--accent-ink);
 }
 
 .recipe__description {
-  font-family: var(--serif);
-  font-size: 16.5px;
+  font-family: var(--font-recipe);
+  font-size: calc(16.5px * var(--text-scale));
   line-height: 1.6;
   color: var(--ink-soft);
   margin: 0 0 20px;
@@ -351,7 +365,7 @@ textarea {
 }
 
 .recipe h2 {
-  font-family: var(--serif);
+  font-family: var(--font-recipe);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -364,8 +378,8 @@ textarea {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-family: var(--serif);
-  font-size: 16px;
+  font-family: var(--font-recipe);
+  font-size: calc(16px * var(--text-scale));
   line-height: 1.5;
 }
 
@@ -404,8 +418,8 @@ textarea {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-family: var(--serif);
-  font-size: 16.5px;
+  font-family: var(--font-recipe);
+  font-size: calc(16.5px * var(--text-scale));
   line-height: 1.65;
 }
 
@@ -420,7 +434,7 @@ textarea {
   height: 24px;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: #6f3a1f;
+  color: var(--accent-ink);
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
@@ -447,8 +461,8 @@ textarea {
 }
 
 .notes__text {
-  font-family: var(--serif);
-  font-size: 16px;
+  font-family: var(--font-recipe);
+  font-size: calc(16px * var(--text-scale));
   line-height: 1.6;
   margin: 0 0 12px;
   white-space: pre-wrap;
@@ -464,6 +478,7 @@ textarea {
   padding: 11px 13px;
   border: 1px solid var(--line);
   border-radius: 9px;
+  background: var(--card);
   resize: vertical;
   outline: none;
   line-height: 1.55;
@@ -479,7 +494,7 @@ textarea {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(35, 32, 28, 0.4);
+  background: rgba(20, 18, 16, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,7 +502,7 @@ textarea {
 }
 
 .modal__panel {
-  width: min(520px, 100%);
+  width: min(560px, 100%);
   max-height: 86vh;
   overflow-y: auto;
   background: var(--card);
@@ -496,10 +511,21 @@ textarea {
 }
 
 .modal__panel h2 {
-  font-family: var(--serif);
+  font-family: var(--font-recipe);
   font-size: 22px;
   font-weight: 400;
   margin: 0 0 18px;
+}
+
+.section-heading {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 26px 0 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
 }
 
 .field {
@@ -522,6 +548,7 @@ textarea {
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
+  background: var(--card);
   outline: none;
 }
 
@@ -555,9 +582,89 @@ textarea {
   white-space: nowrap;
 }
 
-/* ---------- print ---------- */
+/* segmented control, used for theme / font / size pickers */
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.choice:hover {
+  border-color: var(--ink-soft);
+}
+
+.choice--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
+}
+
+.swatch--active {
+  border-color: var(--ink);
+}
+
+.swatch-input {
+  width: 110px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 12.5px;
+  outline: none;
+}
+
+.swatch-input:focus {
+  border-color: var(--accent);
+}
+
+/* ---------- print (also drives PDF export) ---------- */
 
 @media print {
+  /*
+   * Force the light palette regardless of theme. !important is required:
+   * theme.ts writes the live values as inline styles on :root, and an inline
+   * declaration otherwise outranks anything in a stylesheet.
+   */
+  :root {
+    --paper: #ffffff !important;
+    --card: #ffffff !important;
+    --ink: #000000 !important;
+    --ink-soft: #3d3d3d !important;
+    --line: #c9c9c9 !important;
+    --accent-soft: transparent !important;
+    --accent-ink: #000000 !important;
+    --accent: #000000 !important;
+  }
+
   .no-print,
   .sidebar {
     display: none !important;
@@ -590,8 +697,11 @@ textarea {
   }
 
   .recipe__meta li {
-    background: none;
     border: 1px solid #999;
+  }
+
+  .ingredients__group,
+  .steps__group {
     color: #000;
   }
 
@@ -602,19 +712,12 @@ textarea {
   }
 
   .step__number {
-    background: none;
     border: 1px solid #999;
-    color: #000;
   }
 
   .step,
   .ingredients li {
     break-inside: avoid;
-  }
-
-  .recipe__notes,
-  .recipe__instructions {
-    break-before: auto;
   }
 
   a {

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ImportResult, Recipe, RecipeSummary, Settings } from '../shared/types'
+import type { Appearance, ImportResult, Recipe, RecipeSummary, Settings } from '../shared/types'
 
 /**
  * Every main-process handler returns {ok, value|error}. Unwrap it here so the
@@ -17,8 +17,12 @@ async function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
 const api = {
   settings: {
     get: (): Promise<Settings> => invoke('settings:get'),
-    set: (patch: { apiKey?: string | null; recipesDir?: string; model?: string }): Promise<Settings> =>
-      invoke('settings:set', patch),
+    set: (patch: {
+      apiKey?: string | null
+      recipesDir?: string
+      model?: string
+      appearance?: Partial<Appearance>
+    }): Promise<Settings> => invoke('settings:set', patch),
     pickDir: (): Promise<string | null> => invoke('settings:pickDir')
   },
   recipes: {
@@ -26,7 +30,8 @@ const api = {
     get: (id: string): Promise<Recipe> => invoke('recipes:get', id),
     save: (recipe: Recipe): Promise<Recipe> => invoke('recipes:save', recipe),
     remove: (id: string): Promise<void> => invoke('recipes:delete', id),
-    reveal: (id: string): Promise<void> => invoke('recipes:reveal', id)
+    reveal: (id: string): Promise<void> => invoke('recipes:reveal', id),
+    exportPdf: (title: string): Promise<string | null> => invoke('recipes:exportPdf', { title })
   },
   importUrl: (url: string): Promise<ImportResult> => invoke('import:url', url),
   importText: (text: string, sourceUrl?: string): Promise<ImportResult> =>

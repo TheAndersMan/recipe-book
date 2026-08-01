@@ -36,10 +36,30 @@ export interface RecipeSummary {
   savedAt: string
 }
 
+export type ThemeName = 'paper' | 'linen' | 'slate' | 'night'
+export type RecipeFont = 'serif' | 'sans'
+
+export interface Appearance {
+  theme: ThemeName
+  /** Hex, e.g. "#9a4f2b". Everything tinted derives from this. */
+  accent: string
+  recipeFont: RecipeFont
+  /** Multiplier on recipe prose sizes. 1 is the design default. */
+  textScale: number
+}
+
+export const DEFAULT_APPEARANCE: Appearance = {
+  theme: 'paper',
+  accent: '#9a4f2b',
+  recipeFont: 'serif',
+  textScale: 1
+}
+
 export interface Settings {
   hasApiKey: boolean
   recipesDir: string
   model: string
+  appearance: Appearance
 }
 
 export interface ImportResult {

@@ -5,15 +5,48 @@ banner. Recipes are saved as markdown files you own.
 
 ## Running it
 
+Day to day, launch **Recipe Book** from Applications like any other app.
+
+To work on it:
+
 ```bash
 npm install
 npm run dev
 ```
 
-To build a real `.app` in `release/`:
+To rebuild the installable app after changes:
 
 ```bash
 npm run package
+```
+
+That writes `release/Recipe Book-<version>-arm64.dmg` plus an unpacked
+`release/mac-arm64/Recipe Book.app`. Install by dragging from the dmg, or:
+
+```bash
+rm -rf "/Applications/Recipe Book.app" && cp -R "release/mac-arm64/Recipe Book.app" /Applications/
+```
+
+The build is unsigned (`identity: null`), which is fine for a local install. If
+macOS ever refuses to open it after the file has been through a download or
+AirDrop, clear the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Recipe Book.app"
+```
+
+The packaged app and `npm run dev` share the same settings and recipe folder, so
+your API key carries over between them.
+
+## The icon
+
+Generated procedurally by `scripts/make-icon.mjs` — no image editor or asset
+pipeline needed. The `PALETTE` object at the top of that file is the only thing
+to touch for a restyle; shapes are signed-distance functions, so everything
+stays crisp at every size.
+
+```bash
+npm run icon    # re-renders build/icon.iconset and packs build/icon.icns
 ```
 
 ## How extraction works
@@ -72,11 +105,33 @@ Stored encrypted via Electron's `safeStorage`, which on macOS is backed by the
 login Keychain. It never lands in a recipe file and is never sent to the
 renderer — the UI only learns whether one exists.
 
-## Printing
+## Printing and PDF
 
-`Cmd+P` on any recipe. The print stylesheet drops the sidebar, import bar, and
-buttons, collapses to a single column, and avoids breaking mid-step — that's the
-path to a physical book later.
+`Cmd+P` prints; **Save PDF** writes the same layout to a file. Both run through
+the one print stylesheet at the bottom of `styles.css`, which drops the sidebar,
+import bar, and buttons, collapses to a single column, and avoids breaking
+mid-step. PDF export uses Electron's `printToPDF` under print emulation, so what
+you get is exactly what `Cmd+P` would produce — there's no second layout to keep
+in sync.
+
+Print always forces the light palette, whatever theme the app is set to. That's
+the `:root` block with `!important` inside `@media print`: the theme writes live
+values as inline styles on `:root`, and only `!important` in a stylesheet
+outranks an inline declaration.
+
+## Theming
+
+Settings → Appearance: theme (Paper, Linen, Slate, Night), accent colour (seven
+presets or any hex), recipe font (serif/sans), and text size.
+
+Everything routes through CSS custom properties. `src/renderer/src/theme.ts`
+holds the theme palettes and derives the accent tints — `--accent-soft` for chip
+backgrounds, `--accent-ink` for text on them — by blending toward the surface or
+away from it depending on whether the theme is dark. All 28 theme × accent
+combinations were checked to clear 4.5:1 contrast.
+
+To add a theme, add an entry to `THEMES`; the union type in `shared/types.ts`
+will tell you what else needs updating.
 
 ## Layout
 

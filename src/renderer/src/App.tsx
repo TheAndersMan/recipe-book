@@ -4,6 +4,7 @@ import ImportBar from './components/ImportBar'
 import RecipeView from './components/RecipeView'
 import SettingsPanel from './components/SettingsPanel'
 import Sidebar from './components/Sidebar'
+import { applyAppearance } from './theme'
 
 export default function App(): JSX.Element {
   const [summaries, setSummaries] = useState<RecipeSummary[]>([])
@@ -19,6 +20,7 @@ export default function App(): JSX.Element {
   useEffect(() => {
     void (async () => {
       const loaded = await window.api.settings.get()
+      applyAppearance(loaded.appearance)
       setSettings(loaded)
       await refresh()
       // No key and nothing saved yet — send them to settings on first run.
@@ -85,7 +87,12 @@ export default function App(): JSX.Element {
         </div>
 
         {selected ? (
-          <RecipeView recipe={selected} onDelete={onDelete} onSave={onSave} />
+          <RecipeView
+            recipe={selected}
+            onDelete={onDelete}
+            onSave={onSave}
+            onNotice={(tone, text) => setBanner({ tone, text })}
+          />
         ) : (
           <EmptyState count={summaries.length} />
         )}
@@ -97,6 +104,7 @@ export default function App(): JSX.Element {
           onClose={() => setShowSettings(false)}
           onChange={async (patch) => {
             const next = await window.api.settings.set(patch)
+            applyAppearance(next.appearance)
             setSettings(next)
             await refresh()
           }}

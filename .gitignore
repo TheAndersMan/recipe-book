@@ -3,3 +3,4 @@ out/
 release/
 recipes/
 .DS_Store
+build/icon.iconset/

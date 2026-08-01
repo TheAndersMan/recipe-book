@@ -1,16 +1,38 @@
 import { useState, type JSX } from 'react'
-import type { Settings } from '../../../shared/types'
+import type { Appearance, RecipeFont, Settings, ThemeName } from '../../../shared/types'
+import { ACCENT_SWATCHES, normalizeHex, THEMES } from '../theme'
 
 interface Props {
   settings: Settings
   onClose: () => void
-  onChange: (patch: { apiKey?: string | null; recipesDir?: string; model?: string }) => Promise<void>
+  onChange: (patch: {
+    apiKey?: string | null
+    recipesDir?: string
+    model?: string
+    appearance?: Partial<Appearance>
+  }) => Promise<void>
 }
+
+const TEXT_SIZES: { label: string; value: number }[] = [
+  { label: 'Small', value: 0.9 },
+  { label: 'Default', value: 1 },
+  { label: 'Large', value: 1.15 },
+  { label: 'Largest', value: 1.3 }
+]
+
+const FONTS: { label: string; value: RecipeFont }[] = [
+  { label: 'Serif', value: 'serif' },
+  { label: 'Sans', value: 'sans' }
+]
 
 export default function SettingsPanel({ settings, onClose, onChange }: Props): JSX.Element {
   const [key, setKey] = useState('')
   const [model, setModel] = useState(settings.model)
   const [saving, setSaving] = useState(false)
+  const [customAccent, setCustomAccent] = useState(settings.appearance.accent)
+
+  const appearance = settings.appearance
+  const setAppearance = (patch: Partial<Appearance>): void => void onChange({ appearance: patch })
 
   return (
     <div className="modal" onClick={onClose}>
@@ -92,6 +114,93 @@ export default function SettingsPanel({ settings, onClose, onChange }: Props): J
               if (model.trim() && model !== settings.model) void onChange({ model })
             }}
           />
+        </label>
+
+        <p className="section-heading">Appearance</p>
+
+        <label className="field">
+          <span className="field__label">Theme</span>
+          <div className="choices">
+            {(Object.keys(THEMES) as ThemeName[]).map((name) => (
+              <button
+                key={name}
+                className={`choice${appearance.theme === name ? ' choice--active' : ''}`}
+                onClick={() => setAppearance({ theme: name })}
+              >
+                {THEMES[name].label}
+              </button>
+            ))}
+          </div>
+        </label>
+
+        <label className="field">
+          <span className="field__label">Accent</span>
+          <div className="swatches">
+            {ACCENT_SWATCHES.map((colour) => (
+              <button
+                key={colour}
+                className={`swatch${appearance.accent === colour ? ' swatch--active' : ''}`}
+                style={{ background: colour }}
+                title={colour}
+                aria-label={colour}
+                onClick={() => {
+                  setCustomAccent(colour)
+                  setAppearance({ accent: colour })
+                }}
+              />
+            ))}
+            <input
+              className="swatch-input"
+              value={customAccent}
+              spellCheck={false}
+              aria-label="Custom accent hex"
+              onChange={(event) => setCustomAccent(event.target.value)}
+              onBlur={() => {
+                const hex = normalizeHex(customAccent)
+                if (hex) setAppearance({ accent: hex })
+                else setCustomAccent(appearance.accent)
+              }}
+            />
+          </div>
+          <span className="field__hint">
+            Any hex works — chips, step numbers, and links all derive from it.
+          </span>
+        </label>
+
+        <label className="field">
+          <span className="field__label">Recipe font</span>
+          <div className="choices">
+            {FONTS.map((font) => (
+              <button
+                key={font.value}
+                className={`choice${appearance.recipeFont === font.value ? ' choice--active' : ''}`}
+                onClick={() => setAppearance({ recipeFont: font.value })}
+              >
+                {font.label}
+              </button>
+            ))}
+          </div>
+        </label>
+
+        <label className="field">
+          <span className="field__label">Recipe text size</span>
+          <div className="choices">
+            {TEXT_SIZES.map((size) => (
+              <button
+                key={size.value}
+                className={`choice${
+                  Math.abs(appearance.textScale - size.value) < 0.01 ? ' choice--active' : ''
+                }`}
+                onClick={() => setAppearance({ textScale: size.value })}
+              >
+                {size.label}
+              </button>
+            ))}
+          </div>
+          <span className="field__hint">
+            Affects the recipe page only, not the sidebar or controls. Printing and PDF export
+            always use the light theme.
+          </span>
         </label>
 
         <div className="field__row">

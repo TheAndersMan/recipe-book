@@ -1,5 +1,7 @@
-import { dialog, ipcMain, shell } from 'electron'
-import type { ImportResult, Recipe, RecipeSummary, Settings } from '../shared/types'
+import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import type { Appearance, ImportResult, Recipe, RecipeSummary, Settings } from '../shared/types'
 import { extractFromText, extractFromUrl } from './recipe/extract'
 import { RecipeStore } from './recipe/store'
 import { SettingsStore } from './settings'
@@ -15,22 +17,31 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
     })
   }
 
-  handle<Settings>('settings:get', async () => ({
+  const snapshot = (): Settings => ({
     hasApiKey: Boolean(settings.apiKey),
     recipesDir: settings.recipesDir,
-    model: settings.model
-  }))
+    model: settings.model,
+    appearance: settings.appearance
+  })
+
+  handle<Settings>('settings:get', async () => snapshot())
 
   handle<Settings>(
     'settings:set',
-    async (patch: { apiKey?: string | null; recipesDir?: string; model?: string }) => {
+    async (patch: {
+      apiKey?: string | null
+      recipesDir?: string
+      model?: string
+      appearance?: Partial<Appearance>
+    }) => {
       if (patch.apiKey !== undefined) await settings.setApiKey(patch.apiKey)
       if (patch.model !== undefined) await settings.setModel(patch.model)
+      if (patch.appearance !== undefined) await settings.setAppearance(patch.appearance)
       if (patch.recipesDir !== undefined) {
         await settings.setRecipesDir(patch.recipesDir)
         store.setDir(patch.recipesDir)
       }
-      return { hasApiKey: Boolean(settings.apiKey), recipesDir: settings.recipesDir, model: settings.model }
+      return snapshot()
     }
   )
 
@@ -52,7 +63,33 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
   handle<void>('recipes:delete', async (id: string) => store.remove(id))
 
   handle<void>('recipes:reveal', async (id: string) => {
-    shell.showItemInFolder(`${store.getDir()}/${id}.md`)
+    shell.showItemInFolder(join(store.getDir(), `${id}.md`))
+  })
+
+  /**
+   * Renders whatever the window is currently showing, under print emulation —
+   * so the print stylesheet does the layout work and the PDF matches what
+   * Cmd+P would produce. Returns the saved path, or null if cancelled.
+   */
+  handle<string | null>('recipes:exportPdf', async (payload: { title: string }) => {
+    const window = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    if (!window) throw new Error('No window to render.')
+
+    const suggested = payload.title.replace(/[/\\:*?"<>|]/g, '-').trim() || 'recipe'
+    const { canceled, filePath } = await dialog.showSaveDialog(window, {
+      defaultPath: `${suggested}.pdf`,
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    })
+    if (canceled || !filePath) return null
+
+    const pdf = await window.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'Letter',
+      margins: { top: 0.5, bottom: 0.5, left: 0.55, right: 0.55 }
+    })
+
+    await fs.writeFile(filePath, pdf)
+    return filePath
   })
 
   handle<ImportResult>('import:url', async (url: string) => {

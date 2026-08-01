@@ -5,12 +5,14 @@ interface Props {
   recipe: Recipe
   onDelete: (id: string) => void
   onSave: (recipe: Recipe) => void
+  onNotice: (tone: 'note' | 'error', text: string) => void
 }
 
-export default function RecipeView({ recipe, onDelete, onSave }: Props): JSX.Element {
+export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props): JSX.Element {
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState(recipe.notes ?? '')
   const [editingNotes, setEditingNotes] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Reset per-recipe state whenever a different recipe is opened.
   useEffect(() => {
@@ -69,6 +71,23 @@ export default function RecipeView({ recipe, onDelete, onSave }: Props): JSX.Ele
         <div className="recipe__actions no-print">
           <button className="button" onClick={() => window.print()}>
             Print
+          </button>
+          <button
+            className="button"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true)
+              try {
+                const saved = await window.api.recipes.exportPdf(recipe.title)
+                if (saved) onNotice('note', `Saved PDF to ${saved}`)
+              } catch (error) {
+                onNotice('error', error instanceof Error ? error.message : String(error))
+              } finally {
+                setExporting(false)
+              }
+            }}
+          >
+            {exporting ? 'Saving…' : 'Save PDF'}
           </button>
           <button className="button" onClick={() => void window.api.recipes.reveal(recipe.id)}>
             Show file

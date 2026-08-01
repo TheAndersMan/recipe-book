@@ -11,23 +11,44 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-    "package": "electron-vite build && electron-builder --mac"
+    "icon": "node scripts/make-icon.mjs && iconutil -c icns build/icon.iconset -o build/icon.icns",
+    "package": "npm run icon && electron-vite build && electron-builder --mac --arm64"
   },
   "build": {
     "appId": "com.lrn2diy.recipebook",
     "productName": "Recipe Book",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "out/**",
       "package.json"
     ],
     "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.lifestyle",
       "identity": null,
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": "arm64"
+        }
+      ]
+    },
+    "dmg": {
+      "title": "Recipe Book",
+      "contents": [
+        {
+          "x": 150,
+          "y": 200
+        },
+        {
+          "x": 420,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   },

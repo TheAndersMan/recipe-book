@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app, safeStorage } from 'electron'
+import { DEFAULT_APPEARANCE, type Appearance } from '../shared/types'
 
 /**
  * The API key is encrypted with Electron's safeStorage, which on macOS is
@@ -14,6 +15,7 @@ interface StoredSettings {
   apiKeyPlain?: string
   recipesDir?: string
   model?: string
+  appearance?: Partial<Appearance>
 }
 
 const DEFAULT_MODEL = 'claude-opus-5'
@@ -81,6 +83,16 @@ export class SettingsStore {
 
   async setModel(model: string): Promise<void> {
     this.cache.model = model.trim() || DEFAULT_MODEL
+    await this.persist()
+  }
+
+  /** Merged over the defaults, so a partial or older file still loads. */
+  get appearance(): Appearance {
+    return { ...DEFAULT_APPEARANCE, ...(this.cache.appearance ?? {}) }
+  }
+
+  async setAppearance(patch: Partial<Appearance>): Promise<void> {
+    this.cache.appearance = { ...this.appearance, ...patch }
     await this.persist()
   }
 }
