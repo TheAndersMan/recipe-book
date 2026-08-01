@@ -8,6 +8,20 @@ interface Props {
   onOpenSettings: () => void
 }
 
+/** Sliders glyph — reads as settings and stays crisp, unlike the ⚙ character. */
+function SettingsIcon(): JSX.Element {
+  return (
+    <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true">
+      <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none">
+        <line x1="2.25" y1="5" x2="13.75" y2="5" />
+        <line x1="2.25" y1="11" x2="13.75" y2="11" />
+      </g>
+      <circle cx="6" cy="5" r="2.1" fill="currentColor" />
+      <circle cx="10.4" cy="11" r="2.1" fill="currentColor" />
+    </svg>
+  )
+}
+
 export default function Sidebar({
   summaries,
   selectedId,
@@ -31,8 +45,13 @@ export default function Sidebar({
     <aside className="sidebar no-print">
       <div className="sidebar__head">
         <span className="sidebar__title">Recipes</span>
-        <button className="icon-button" onClick={onOpenSettings} title="Settings">
-          ⚙
+        <button
+          className="icon-button"
+          onClick={onOpenSettings}
+          title="Settings"
+          aria-label="Settings"
+        >
+          <SettingsIcon />
         </button>
       </div>
 

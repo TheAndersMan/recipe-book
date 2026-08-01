@@ -93,17 +93,23 @@ select {
 }
 
 .icon-button {
-  border: none;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
   cursor: pointer;
-  font-size: 15px;
-  color: var(--ink-soft);
-  padding: 4px 6px;
-  border-radius: 6px;
 }
 
 .icon-button:hover {
+  border-color: var(--accent);
   background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
 .sidebar__search {
@@ -557,15 +563,47 @@ select {
   margin: 0 0 18px;
 }
 
-.section-heading {
+.advanced {
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.advanced__summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-soft);
-  margin: 26px 0 14px;
+}
+
+.advanced__summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced__summary::before {
+  content: '›';
+  font-size: 15px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.advanced[open] .advanced__summary::before {
+  content: '⌄';
+  transform: translateY(-4px);
+}
+
+.advanced__summary:hover {
+  color: var(--accent);
+}
+
+.advanced__body {
   padding-top: 18px;
-  border-top: 1px solid var(--line);
 }
 
 .field {
@@ -609,6 +647,13 @@ select {
   gap: 8px;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.field__row--footer {
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  justify-content: flex-end;
 }
 
 .field__path {
@@ -690,11 +735,21 @@ select {
 
 @media print {
   /*
-   * Force the light palette regardless of theme. !important is required:
-   * theme.ts writes the live values as inline styles on :root, and an inline
+   * Print is deliberately its own theme: always ink on white, whatever the app
+   * is set to on screen. !important is required throughout because theme.ts
+   * writes the live values as inline styles on :root, and an inline
    * declaration otherwise outranks anything in a stylesheet.
    */
   :root {
+    /*
+     * Load-bearing. theme.ts sets color-scheme: dark for dark themes, and with
+     * printBackground enabled Chromium paints the *page canvas* — the full
+     * sheet, margins included — from the colour scheme. That happens outside
+     * any element's background, so the declarations below cannot reach it and
+     * a dark theme prints a dark border around the content.
+     */
+    color-scheme: light !important;
+
     --paper: #ffffff !important;
     --card: #ffffff !important;
     --ink: #000000 !important;
@@ -703,6 +758,8 @@ select {
     --accent-soft: transparent !important;
     --accent-ink: #000000 !important;
     --accent: #000000 !important;
+    --font-recipe: var(--serif) !important;
+    --text-scale: 1 !important;
   }
 
   .no-print,

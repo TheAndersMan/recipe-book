@@ -131,10 +131,26 @@ at 0.82 and runs to two pages — below that the type is too small to cook from,
 and a genuinely long recipe is better off spilling over. Both knobs are constants
 at the top of `pdf.ts`.
 
-Print always forces the light palette, whatever theme the app is set to. That's
-the `:root` block with `!important` inside `@media print`: the theme writes live
-values as inline styles on `:root`, and only `!important` in a stylesheet
-outranks an inline declaration.
+### Print is its own theme
+
+Print and PDF are always ink on white, whatever the app is set to on screen —
+including font and text size, so a "Largest" reading preference doesn't change
+how much fits on a sheet. That's the `:root` block inside `@media print`, where
+every declaration needs `!important`: the theme writes live values as inline
+styles on `:root`, and only `!important` in a stylesheet outranks an inline
+declaration.
+
+One line in there is load-bearing and easy to delete by accident:
+
+```css
+color-scheme: light !important;
+```
+
+`theme.ts` sets `color-scheme: dark` for dark themes. With `printBackground`
+enabled, Chromium paints the **page canvas** — the whole sheet, margins included
+— from the colour scheme. That happens outside any element's background, so no
+amount of `background: #fff !important` reaches it, and a dark theme prints a
+dark border around the white content area.
 
 ## Theming
 
