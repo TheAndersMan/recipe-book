@@ -1,0 +1,53 @@
+{
+  "name": "recipe-book",
+  "version": "0.1.0",
+  "description": "Pull recipes off any page and keep them as clean, printable markdown",
+  "main": "./out/main/index.js",
+  "author": "Anders Rasmusson",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "package": "electron-vite build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.lrn2diy.recipebook",
+    "productName": "Recipe Book",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "mac": {
+      "identity": null,
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "cheerio": "^1.0.0",
+    "js-yaml": "^4.1.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.3.6"
+  }
+}
