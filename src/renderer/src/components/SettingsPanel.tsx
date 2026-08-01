@@ -95,7 +95,20 @@ export default function SettingsPanel({ settings, onClose, onChange }: Props): J
         </label>
 
         <div className="field__row">
-          <button className="button" onClick={onClose}>
+          <button
+            className="button"
+            disabled={saving}
+            onClick={async () => {
+              // Don't discard a key that was typed but never explicitly saved.
+              if (key.trim()) {
+                setSaving(true)
+                await onChange({ apiKey: key })
+                setKey('')
+                setSaving(false)
+              }
+              onClose()
+            }}
+          >
             Done
           </button>
         </div>
