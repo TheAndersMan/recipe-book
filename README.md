@@ -114,22 +114,30 @@ side-by-side, and avoids breaking mid-step. PDF export uses Electron's
 `printToPDF` under print emulation, so what you get is exactly what `Cmd+P`
 would produce — there's no second layout to keep in sync.
 
-### Fitting on one page
+### Filling exactly one page
 
-Recipes are shrunk to fit a single sheet where that's reasonable. Rather than
-estimating heights, `src/main/pdf.ts` uses `printToPDF` itself as the oracle:
-render, count the pages in the returned bytes, shrink a step, repeat. A render
-takes tens of milliseconds, so walking the ladder is cheap and the answer is
-exact — no guessing about how text reflows at a different scale.
+Recipes are scaled to use as much of a single sheet as they can — up as well as
+down. A short recipe at screen size would otherwise sit in the top third of the
+page.
+
+Rather than estimating heights, `src/main/pdf.ts` uses `printToPDF` itself as
+the oracle: render, count the pages in the returned bytes, adjust, repeat. A
+render takes a couple hundred milliseconds and the answer is exact — no guessing
+about how text reflows at a different scale.
 
 The knob is a CSS `zoom` on `.recipe` that only applies under `@media print`.
 `zoom` affects layout (unlike `transform: scale()`), so pagination respects it,
 and because it's print-only the value can just be left set afterwards.
 
-The ladder runs 1.0 → 0.62. If a recipe still won't fit at the bottom, it settles
-at 0.82 and runs to two pages — below that the type is too small to cook from,
-and a genuinely long recipe is better off spilling over. Both knobs are constants
-at the top of `pdf.ts`.
+`ZOOM_LADDER` runs 0.62 → 1.75, and the search is a **binary search for the
+largest rung that still fits on one page**. Fitting is monotonic — if it fits at
+some zoom it fits at every smaller one — so ~5 renders settle a 19-step ladder
+instead of 19. In practice the two sample recipes land at 1.46 and 1.75 and
+cover ~86% of the sheet, against 91% available after margins.
+
+If even the smallest rung overflows, it settles at `COMFORTABLE_ZOOM` (0.8) and
+runs to two pages. Both the ladder and that floor are constants at the top of
+`pdf.ts`.
 
 ### Print is its own theme
 
@@ -162,8 +170,14 @@ it takes no ink.
 
 ## Theming
 
-Settings → Appearance: theme (Paper, Linen, Slate, Night), accent colour (seven
-presets or any hex), recipe font (serif/sans), and text size.
+Settings → Appearance: theme (Paper, Linen, Slate, Night, Midnight), accent
+colour (seven presets or any hex), recipe font (serif/sans), and text size.
+
+The two dark themes keep their surfaces desaturated — neutral charcoal for
+Night, blue for Midnight. An earlier warm-brown dark sat close to the terracotta
+accent in hue and made everything look muddy; keeping surfaces neutral lets the
+accent be the only colour on screen. On dark themes the accent is also lifted
+toward white before use, or it sinks into the background and reads as grey.
 
 Everything routes through CSS custom properties. `src/renderer/src/theme.ts`
 holds the theme palettes and derives the accent tints — `--accent-soft` for chip

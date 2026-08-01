@@ -36,7 +36,7 @@ export interface RecipeSummary {
   savedAt: string
 }
 
-export type ThemeName = 'paper' | 'linen' | 'slate' | 'night'
+export type ThemeName = 'paper' | 'linen' | 'slate' | 'night' | 'midnight'
 export type RecipeFont = 'serif' | 'sans'
 
 export interface Appearance {

@@ -19,14 +19,24 @@ export const PDF_OPTIONS = {
   margins: { top: 0.5, bottom: 0.5, left: 0.55, right: 0.55 }
 } as const
 
-/** Tried in order until the recipe fits on one page. */
-const ZOOM_STEPS = [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.66, 0.62]
+/**
+ * Candidate zooms, ascending. The goal is the *largest* value that still fits
+ * on one page — a short recipe should fill the sheet, not sit in the top third
+ * at whatever size the screen happened to use.
+ *
+ * Steps widen as they climb: a 0.05 difference is very visible at 0.7 and
+ * barely noticeable at 1.7.
+ */
+const ZOOM_LADDER = [
+  0.62, 0.66, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.16, 1.22, 1.3,
+  1.38, 1.46, 1.55, 1.65, 1.75
+]
 
 /**
- * Where we give up and let it run to two pages. Below this the type gets too
+ * Used when even the smallest step overflows. Below this the type gets too
  * small to cook from, and a genuinely long recipe is better off spilling over.
  */
-const COMFORTABLE_ZOOM = 0.82
+const COMFORTABLE_ZOOM = 0.8
 
 export interface FittedRender {
   pdf: Buffer
@@ -50,16 +60,47 @@ export async function renderFitted(
   const contents = window.webContents
   window.setBackgroundColor('#ffffff')
 
+  const seen = new Map<number, { pdf: Buffer; pages: number }>()
+  const renderAt = async (index: number): Promise<{ pdf: Buffer; pages: number }> => {
+    const cached = seen.get(index)
+    if (cached) return cached
+    await setPrintZoom(contents, ZOOM_LADDER[index])
+    const pdf = await contents.printToPDF(PDF_OPTIONS)
+    const result = { pdf, pages: countPages(pdf) }
+    seen.set(index, result)
+    return result
+  }
+
   try {
-    for (const zoom of ZOOM_STEPS) {
-      await setPrintZoom(contents, zoom)
-      const pdf = await contents.printToPDF(PDF_OPTIONS)
-      if (countPages(pdf) <= 1) return { pdf, zoom, pages: 1 }
+    /*
+     * Binary search for the largest rung that still fits on one page. Fitting
+     * is monotonic — if it fits at some zoom it fits at every smaller one — so
+     * ~5 renders settle a 19-step ladder, against 19 for a linear walk.
+     */
+    let low = 0
+    let high = ZOOM_LADDER.length - 1
+    let best = -1
+
+    while (low <= high) {
+      const middle = (low + high) >> 1
+      const { pages } = await renderAt(middle)
+      if (pages <= 1) {
+        best = middle
+        low = middle + 1
+      } else {
+        high = middle - 1
+      }
     }
 
-    await setPrintZoom(contents, COMFORTABLE_ZOOM)
-    const pdf = await contents.printToPDF(PDF_OPTIONS)
-    return { pdf, zoom: COMFORTABLE_ZOOM, pages: countPages(pdf) }
+    if (best >= 0) {
+      const { pdf } = await renderAt(best)
+      return { pdf, zoom: ZOOM_LADDER[best], pages: 1 }
+    }
+
+    // Too long for one page even at the smallest step.
+    const fallback = ZOOM_LADDER.indexOf(COMFORTABLE_ZOOM)
+    const { pdf, pages } = await renderAt(fallback)
+    return { pdf, zoom: COMFORTABLE_ZOOM, pages }
   } finally {
     window.setBackgroundColor(restoreBackground)
   }

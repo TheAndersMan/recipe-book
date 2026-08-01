@@ -51,15 +51,32 @@ export const THEMES: Record<ThemeName, Palette & { label: string }> = {
     line: '#dde0e6',
     dark: false
   },
+  /*
+   * The darks are deliberately neutral-to-cool. An earlier warm-brown dark
+   * muddied everything: the surfaces sat close to the terracotta accent in hue,
+   * so nothing stood out. Keeping the surfaces desaturated lets the accent read
+   * as the only colour on screen.
+   */
   night: {
     label: 'Night',
-    paper: '#191715',
-    card: '#232019',
-    sidebar: '#141210',
-    chipHover: '#2f2a23',
-    ink: '#ece6dc',
-    inkSoft: '#a2988a',
-    line: '#38322a',
+    paper: '#111113',
+    card: '#1a1a1d',
+    sidebar: '#0c0c0e',
+    chipHover: '#26262b',
+    ink: '#f2f2f5',
+    inkSoft: '#a3a3ad',
+    line: '#2d2d33',
+    dark: true
+  },
+  midnight: {
+    label: 'Midnight',
+    paper: '#0a1120',
+    card: '#111c31',
+    sidebar: '#060b16',
+    chipHover: '#1c2b45',
+    ink: '#e7eefb',
+    inkSoft: '#8da3c4',
+    line: '#22344f',
     dark: true
   }
 }
@@ -92,13 +109,15 @@ export function applyAppearance(appearance: Appearance): void {
   root.setProperty('--ink-soft', theme.inkSoft)
   root.setProperty('--line', theme.line)
 
-  root.setProperty('--accent', accent)
+  // On dark surfaces the accent has to stay brighter than the raw hex, or it
+  // sinks into the background and reads as grey.
+  root.setProperty('--accent', theme.dark ? mix(accent, '#ffffff', 0.22) : accent)
   // Tinted chip backgrounds: mostly the card colour, a little accent.
-  root.setProperty('--accent-soft', mix(accent, theme.card, theme.dark ? 0.78 : 0.86))
+  root.setProperty('--accent-soft', mix(accent, theme.card, theme.dark ? 0.72 : 0.86))
   // Text sitting on those chips needs to move away from the surface, not toward it.
   root.setProperty(
     '--accent-ink',
-    theme.dark ? mix(accent, '#ffffff', 0.45) : mix(accent, '#000000', 0.14)
+    theme.dark ? mix(accent, '#ffffff', 0.55) : mix(accent, '#000000', 0.14)
   )
 
   root.setProperty('--font-recipe', FONT_STACKS[appearance.recipeFont] ?? FONT_STACKS.serif)
