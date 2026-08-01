@@ -62,6 +62,11 @@ export interface Settings {
   appearance: Appearance
 }
 
+export interface ExportResult {
+  path: string
+  pages: number
+}
+
 export interface ImportResult {
   recipe: Recipe
   method: ExtractionMethod

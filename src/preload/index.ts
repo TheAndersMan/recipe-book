@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { Appearance, ImportResult, Recipe, RecipeSummary, Settings } from '../shared/types'
+import type {
+  Appearance,
+  ExportResult,
+  ImportResult,
+  Recipe,
+  RecipeSummary,
+  Settings
+} from '../shared/types'
 
 /**
  * Every main-process handler returns {ok, value|error}. Unwrap it here so the
@@ -31,12 +38,15 @@ const api = {
     save: (recipe: Recipe): Promise<Recipe> => invoke('recipes:save', recipe),
     remove: (id: string): Promise<void> => invoke('recipes:delete', id),
     reveal: (id: string): Promise<void> => invoke('recipes:reveal', id),
-    exportPdf: (title: string): Promise<string | null> => invoke('recipes:exportPdf', { title })
+    exportPdf: (title: string): Promise<ExportResult | null> =>
+      invoke('recipes:exportPdf', { title }),
+    fitPrintZoom: (): Promise<number> => invoke('recipes:fitPrintZoom')
   },
   importUrl: (url: string): Promise<ImportResult> => invoke('import:url', url),
   importText: (text: string, sourceUrl?: string): Promise<ImportResult> =>
     invoke('import:text', { text, sourceUrl }),
-  openExternal: (url: string): Promise<void> => invoke('shell:open', url)
+  openExternal: (url: string): Promise<void> => invoke('shell:open', url),
+  openPath: (path: string): Promise<void> => invoke('shell:openPath', path)
 }
 
 export type RecipeBookApi = typeof api

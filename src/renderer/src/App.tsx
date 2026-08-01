@@ -6,12 +6,19 @@ import SettingsPanel from './components/SettingsPanel'
 import Sidebar from './components/Sidebar'
 import { applyAppearance } from './theme'
 
+export interface Notice {
+  tone: 'note' | 'error'
+  text: string
+  /** Optional button on the right of the banner, e.g. "Open in Preview". */
+  action?: { label: string; path: string }
+}
+
 export default function App(): JSX.Element {
   const [summaries, setSummaries] = useState<RecipeSummary[]>([])
   const [selected, setSelected] = useState<Recipe | null>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [banner, setBanner] = useState<{ tone: 'note' | 'error'; text: string } | null>(null)
+  const [banner, setBanner] = useState<Notice | null>(null)
 
   const refresh = useCallback(async () => {
     setSummaries(await window.api.recipes.list())
@@ -62,6 +69,10 @@ export default function App(): JSX.Element {
 
   return (
     <div className="app">
+      {/* Content fills the frameless window, so the top strip has to opt into
+          being a drag handle or there's nothing to grab the window by. */}
+      <div className="titlebar no-print" />
+
       <Sidebar
         summaries={summaries}
         selectedId={selected?.id ?? null}
@@ -78,7 +89,15 @@ export default function App(): JSX.Element {
           />
           {banner && (
             <div className={`banner banner--${banner.tone}`}>
-              <span>{banner.text}</span>
+              <span className="banner__text">{banner.text}</span>
+              {banner.action && (
+                <button
+                  className="banner__action"
+                  onClick={() => void window.api.openPath(banner.action!.path)}
+                >
+                  {banner.action.label}
+                </button>
+              )}
               <button className="banner__close" onClick={() => setBanner(null)} aria-label="Dismiss">
                 ×
               </button>
@@ -91,7 +110,7 @@ export default function App(): JSX.Element {
             recipe={selected}
             onDelete={onDelete}
             onSave={onSave}
-            onNotice={(tone, text) => setBanner({ tone, text })}
+            onNotice={(notice) => setBanner(notice)}
           />
         ) : (
           <EmptyState count={summaries.length} />

@@ -109,10 +109,27 @@ renderer — the UI only learns whether one exists.
 
 `Cmd+P` prints; **Save PDF** writes the same layout to a file. Both run through
 the one print stylesheet at the bottom of `styles.css`, which drops the sidebar,
-import bar, and buttons, collapses to a single column, and avoids breaking
-mid-step. PDF export uses Electron's `printToPDF` under print emulation, so what
-you get is exactly what `Cmd+P` would produce — there's no second layout to keep
-in sync.
+import bar, and buttons, tightens the type, keeps ingredients and steps
+side-by-side, and avoids breaking mid-step. PDF export uses Electron's
+`printToPDF` under print emulation, so what you get is exactly what `Cmd+P`
+would produce — there's no second layout to keep in sync.
+
+### Fitting on one page
+
+Recipes are shrunk to fit a single sheet where that's reasonable. Rather than
+estimating heights, `src/main/pdf.ts` uses `printToPDF` itself as the oracle:
+render, count the pages in the returned bytes, shrink a step, repeat. A render
+takes tens of milliseconds, so walking the ladder is cheap and the answer is
+exact — no guessing about how text reflows at a different scale.
+
+The knob is a CSS `zoom` on `.recipe` that only applies under `@media print`.
+`zoom` affects layout (unlike `transform: scale()`), so pagination respects it,
+and because it's print-only the value can just be left set afterwards.
+
+The ladder runs 1.0 → 0.62. If a recipe still won't fit at the bottom, it settles
+at 0.82 and runs to two pages — below that the type is too small to cook from,
+and a genuinely long recipe is better off spilling over. Both knobs are constants
+at the top of `pdf.ts`.
 
 Print always forces the light palette, whatever theme the app is set to. That's
 the `:root` block with `!important` inside `@media print`: the theme writes live

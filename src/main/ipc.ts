@@ -1,7 +1,15 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
-import type { Appearance, ImportResult, Recipe, RecipeSummary, Settings } from '../shared/types'
+import type {
+  Appearance,
+  ExportResult,
+  ImportResult,
+  Recipe,
+  RecipeSummary,
+  Settings
+} from '../shared/types'
+import { renderFitted } from './pdf'
 import { extractFromText, extractFromUrl } from './recipe/extract'
 import { RecipeStore } from './recipe/store'
 import { SettingsStore } from './settings'
@@ -66,14 +74,19 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
     shell.showItemInFolder(join(store.getDir(), `${id}.md`))
   })
 
-  /**
-   * Renders whatever the window is currently showing, under print emulation —
-   * so the print stylesheet does the layout work and the PDF matches what
-   * Cmd+P would produce. Returns the saved path, or null if cancelled.
-   */
-  handle<string | null>('recipes:exportPdf', async (payload: { title: string }) => {
+  const activeWindow = (): BrowserWindow => {
     const window = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
     if (!window) throw new Error('No window to render.')
+    return window
+  }
+
+  /**
+   * Renders whatever the window is currently showing, under print emulation —
+   * so the print stylesheet does the layout and the PDF matches what Cmd+P
+   * would produce. Shrunk to fit one page where that's reasonable.
+   */
+  handle<ExportResult | null>('recipes:exportPdf', async (payload: { title: string }) => {
+    const window = activeWindow()
 
     const suggested = payload.title.replace(/[/\\:*?"<>|]/g, '-').trim() || 'recipe'
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
@@ -82,14 +95,23 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
     })
     if (canceled || !filePath) return null
 
-    const pdf = await window.webContents.printToPDF({
-      printBackground: true,
-      pageSize: 'Letter',
-      margins: { top: 0.5, bottom: 0.5, left: 0.55, right: 0.55 }
-    })
-
+    const { pdf, pages } = await renderFitted(window.webContents)
     await fs.writeFile(filePath, pdf)
-    return filePath
+    return { path: filePath, pages }
+  })
+
+  /**
+   * Sizes the recipe for Cmd+P. The zoom lives in a CSS variable that only
+   * applies under print media, so it can stay set after we're done.
+   */
+  handle<number>('recipes:fitPrintZoom', async () => {
+    const { zoom } = await renderFitted(activeWindow().webContents)
+    return zoom
+  })
+
+  handle<void>('shell:openPath', async (path: string) => {
+    const error = await shell.openPath(path)
+    if (error) throw new Error(error)
   })
 
   handle<ImportResult>('import:url', async (url: string) => {

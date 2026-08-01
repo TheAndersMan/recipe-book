@@ -1,18 +1,22 @@
 import { useEffect, useState, type JSX } from 'react'
 import { headingText, isHeading, type Recipe } from '../../../shared/types'
+import type { Notice } from '../App'
 
 interface Props {
   recipe: Recipe
   onDelete: (id: string) => void
   onSave: (recipe: Recipe) => void
-  onNotice: (tone: 'note' | 'error', text: string) => void
+  onNotice: (notice: Notice) => void
 }
 
 export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props): JSX.Element {
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState(recipe.notes ?? '')
   const [editingNotes, setEditingNotes] = useState(false)
-  const [exporting, setExporting] = useState(false)
+  const [busy, setBusy] = useState<'print' | 'pdf' | null>(null)
+
+  const fail = (error: unknown): void =>
+    onNotice({ tone: 'error', text: error instanceof Error ? error.message : String(error) })
 
   // Reset per-recipe state whenever a different recipe is opened.
   useEffect(() => {
@@ -69,25 +73,49 @@ export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props
         {recipe.description && <p className="recipe__description">{recipe.description}</p>}
 
         <div className="recipe__actions no-print">
-          <button className="button" onClick={() => window.print()}>
-            Print
-          </button>
           <button
             className="button"
-            disabled={exporting}
+            disabled={busy !== null}
             onClick={async () => {
-              setExporting(true)
+              setBusy('print')
               try {
-                const saved = await window.api.recipes.exportPdf(recipe.title)
-                if (saved) onNotice('note', `Saved PDF to ${saved}`)
+                // Size it to one page before handing off to the print dialog.
+                await window.api.recipes.fitPrintZoom()
+                window.print()
               } catch (error) {
-                onNotice('error', error instanceof Error ? error.message : String(error))
+                fail(error)
               } finally {
-                setExporting(false)
+                setBusy(null)
               }
             }}
           >
-            {exporting ? 'Saving…' : 'Save PDF'}
+            {busy === 'print' ? 'Preparing…' : 'Print'}
+          </button>
+          <button
+            className="button"
+            disabled={busy !== null}
+            onClick={async () => {
+              setBusy('pdf')
+              try {
+                const saved = await window.api.recipes.exportPdf(recipe.title)
+                if (saved) {
+                  onNotice({
+                    tone: 'note',
+                    text:
+                      saved.pages > 1
+                        ? `Saved as ${saved.pages} pages — this one is too long to fit on one.`
+                        : 'Saved as a single page.',
+                    action: { label: 'Open in Preview', path: saved.path }
+                  })
+                }
+              } catch (error) {
+                fail(error)
+              } finally {
+                setBusy(null)
+              }
+            }}
+          >
+            {busy === 'pdf' ? 'Saving…' : 'Save PDF'}
           </button>
           <button className="button" onClick={() => void window.api.recipes.reveal(recipe.id)}>
             Show file
