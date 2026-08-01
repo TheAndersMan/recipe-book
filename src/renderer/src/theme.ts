@@ -106,6 +106,11 @@ export function applyAppearance(appearance: Appearance): void {
 
   // Lets native widgets (scrollbars, form controls) match the theme.
   document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
+
+  // Keep the native window surface in step, so resizes don't flash the wrong
+  // colour. Main also needs this value to restore after printing, where the
+  // window background has to be white — see pdf.ts.
+  void window.api?.setWindowBackground(theme.paper)
 }
 
 function clampScale(value: number): number {

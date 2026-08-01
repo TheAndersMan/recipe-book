@@ -46,7 +46,9 @@ const api = {
   importText: (text: string, sourceUrl?: string): Promise<ImportResult> =>
     invoke('import:text', { text, sourceUrl }),
   openExternal: (url: string): Promise<void> => invoke('shell:open', url),
-  openPath: (path: string): Promise<void> => invoke('shell:openPath', path)
+  openPath: (path: string): Promise<void> => invoke('shell:openPath', path),
+  setWindowBackground: (colour: string): Promise<void> =>
+    invoke('window:setBackground', colour)
 }
 
 export type RecipeBookApi = typeof api

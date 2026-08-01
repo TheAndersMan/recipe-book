@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { BrowserWindow, WebContents } from 'electron'
 
 /**
  * Fitting a recipe onto one page.
@@ -34,16 +34,35 @@ export interface FittedRender {
   pages: number
 }
 
-export async function renderFitted(contents: WebContents): Promise<FittedRender> {
-  for (const zoom of ZOOM_STEPS) {
-    await setPrintZoom(contents, zoom)
-    const pdf = await contents.printToPDF(PDF_OPTIONS)
-    if (countPages(pdf) <= 1) return { pdf, zoom, pages: 1 }
-  }
+/**
+ * The window's own backgroundColor is composited into the PDF, and it lands in
+ * the margin band — outside the document, where no stylesheet can reach it. A
+ * themed window therefore prints a coloured border around the content. Swapping
+ * it to white for the duration leaves the margin blank, as it should be.
+ *
+ * `restoreBackground` is the colour to put back afterwards: the renderer keeps
+ * main informed of the current theme's surface colour.
+ */
+export async function renderFitted(
+  window: BrowserWindow,
+  restoreBackground: string
+): Promise<FittedRender> {
+  const contents = window.webContents
+  window.setBackgroundColor('#ffffff')
 
-  await setPrintZoom(contents, COMFORTABLE_ZOOM)
-  const pdf = await contents.printToPDF(PDF_OPTIONS)
-  return { pdf, zoom: COMFORTABLE_ZOOM, pages: countPages(pdf) }
+  try {
+    for (const zoom of ZOOM_STEPS) {
+      await setPrintZoom(contents, zoom)
+      const pdf = await contents.printToPDF(PDF_OPTIONS)
+      if (countPages(pdf) <= 1) return { pdf, zoom, pages: 1 }
+    }
+
+    await setPrintZoom(contents, COMFORTABLE_ZOOM)
+    const pdf = await contents.printToPDF(PDF_OPTIONS)
+    return { pdf, zoom: COMFORTABLE_ZOOM, pages: countPages(pdf) }
+  } finally {
+    window.setBackgroundColor(restoreBackground)
+  }
 }
 
 export async function setPrintZoom(contents: WebContents, zoom: number): Promise<void> {

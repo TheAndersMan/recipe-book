@@ -12,7 +12,9 @@ function createWindow(): BrowserWindow {
     minHeight: 560,
     show: false,
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#fbf9f6',
+    // Neutral to start; the renderer sets the themed colour as soon as it
+    // applies the appearance, before the window is shown.
+    backgroundColor: '#ffffff',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false

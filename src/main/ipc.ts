@@ -14,6 +14,12 @@ import { extractFromText, extractFromUrl } from './recipe/extract'
 import { RecipeStore } from './recipe/store'
 import { SettingsStore } from './settings'
 
+/**
+ * The window's surface colour, kept in step with the active theme by the
+ * renderer. Held here so printing can swap it out and put it back.
+ */
+let windowBackground = '#ffffff'
+
 export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
   const handle = <T>(channel: string, fn: (...args: never[]) => Promise<T>): void => {
     ipcMain.handle(channel, async (_event, ...args) => {
@@ -95,9 +101,16 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
     })
     if (canceled || !filePath) return null
 
-    const { pdf, pages } = await renderFitted(window.webContents)
+    const { pdf, pages } = await renderFitted(window, windowBackground)
     await fs.writeFile(filePath, pdf)
     return { path: filePath, pages }
+  })
+
+  /** Keeps the native window surface matching the theme (and print-safe). */
+  handle<void>('window:setBackground', async (colour: string) => {
+    if (!/^#[0-9a-f]{6}$/i.test(colour)) return
+    windowBackground = colour
+    activeWindow().setBackgroundColor(colour)
   })
 
   /**
@@ -105,7 +118,7 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
    * applies under print media, so it can stay set after we're done.
    */
   handle<number>('recipes:fitPrintZoom', async () => {
-    const { zoom } = await renderFitted(activeWindow().webContents)
+    const { zoom } = await renderFitted(activeWindow(), windowBackground)
     return zoom
   })
 

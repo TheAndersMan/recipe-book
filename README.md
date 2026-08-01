@@ -140,17 +140,25 @@ every declaration needs `!important`: the theme writes live values as inline
 styles on `:root`, and only `!important` in a stylesheet outranks an inline
 declaration.
 
-One line in there is load-bearing and easy to delete by accident:
+### Two ways a theme colour leaks into the margins
 
-```css
-color-scheme: light !important;
-```
+Both produce the same symptom — a coloured border around the white content area
+of an exported PDF — and neither is reachable from the recipe's own styles. If
+that border ever comes back, it's one of these.
 
-`theme.ts` sets `color-scheme: dark` for dark themes. With `printBackground`
-enabled, Chromium paints the **page canvas** — the whole sheet, margins included
-— from the colour scheme. That happens outside any element's background, so no
-amount of `background: #fff !important` reaches it, and a dark theme prints a
-dark border around the white content area.
+**1. The colour scheme.** `theme.ts` sets `color-scheme: dark` for dark themes,
+and with `printBackground` enabled Chromium paints the page canvas from it. The
+print block pins `color-scheme: light !important` to stop that.
+
+**2. The window's own background.** `BrowserWindow`'s `backgroundColor` is
+composited into the PDF, and it shows through in the margin band, which sits
+outside the document entirely — no stylesheet can reach it. `renderFitted()`
+swaps the window to white for the duration of the render and restores the themed
+colour afterwards. The renderer tells main which colour that is via
+`window:setBackground` whenever the appearance changes, so the two stay in step.
+
+With both handled, the margin band comes out with alpha 0 — genuinely blank, so
+it takes no ink.
 
 ## Theming
 
