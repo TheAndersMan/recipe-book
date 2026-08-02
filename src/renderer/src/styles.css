@@ -804,9 +804,10 @@ select {
     margin-bottom: 3px;
   }
 
+  /* The source link is for getting back to the original in the app; on paper
+     it's just a URL you can't click. */
   .recipe__source {
-    font-size: 8.5pt;
-    margin-bottom: 7px;
+    display: none;
   }
 
   .recipe__meta {
