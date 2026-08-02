@@ -850,6 +850,29 @@ select {
     margin-bottom: 5px;
   }
 
+  /*
+   * The interactive checkbox is display:none here, which left ingredients as
+   * bare lines of text — hard to tell apart once one of them wraps. Draw a box
+   * in its place: it keeps the printed page looking like the app, gives a
+   * hanging indent for wrapped lines, and can be ticked off with a pen.
+   * For a plain bullet or dash instead, swap content for '•' / '–' and drop
+   * the border and dimensions.
+   */
+  .ingredient {
+    align-items: flex-start;
+    gap: 6pt;
+  }
+
+  .ingredient::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 7pt;
+    height: 7pt;
+    margin-top: 2.5pt;
+    border: 0.75pt solid #888;
+    border-radius: 1.5pt;
+  }
+
   .ingredients__group,
   .steps__group {
     color: #000;
