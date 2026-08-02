@@ -183,7 +183,9 @@ export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props
         </section>
       </div>
 
-      <section className="recipe__notes">
+      {/* Kept on screen even when empty — that's where "Add notes" lives — but
+          an empty heading is just clutter on paper. */}
+      <section className={`recipe__notes${recipe.notes ? '' : ' no-print'}`}>
         <h2>Notes</h2>
         {editingNotes ? (
           <>
