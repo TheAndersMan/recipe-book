@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import yaml from 'js-yaml'
 import { headingText, isHeading, type Recipe, type RecipeSummary } from '../../shared/types'
+import { normalizeYield } from './html'
 
 /**
  * Recipes live as markdown files with YAML frontmatter — greppable, printable,
@@ -197,7 +198,9 @@ export function parseMarkdown(raw: string, id: string): Recipe {
     prepTime: frontmatter.prep_time,
     cookTime: frontmatter.cook_time,
     totalTime: frontmatter.total_time,
-    yield: frontmatter.yield,
+    // Also applied on read, so recipes saved before yields were labelled pick
+    // it up without needing their files rewritten.
+    yield: normalizeYield(frontmatter.yield),
     sourceUrl: frontmatter.source_url,
     sourceName: frontmatter.source_name,
     imageUrl: frontmatter.image_url,

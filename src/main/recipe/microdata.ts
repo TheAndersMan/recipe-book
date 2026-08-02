@@ -1,5 +1,5 @@
 import type * as cheerio from 'cheerio'
-import { formatDuration, splitBlob, stripHtml } from './html'
+import { formatDuration, pickYield, splitBlob, stripHtml } from './html'
 import type { RawRecipe } from './jsonld'
 
 /**
@@ -49,7 +49,7 @@ export function fromMicrodata($: cheerio.CheerioAPI): RawRecipe | undefined {
     prepTime: formatDuration(first('prepTime')),
     cookTime: formatDuration(first('cookTime')),
     totalTime: formatDuration(first('totalTime')),
-    yield: first('recipeYield'),
+    yield: pickYield(prop('recipeYield')),
     imageUrl: image.attr('src') ?? image.attr('content'),
     author: first('author'),
     tags: [...prop('recipeCategory'), ...prop('recipeCuisine')].slice(0, 8)

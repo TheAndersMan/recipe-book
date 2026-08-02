@@ -1,5 +1,5 @@
 import type * as cheerio from 'cheerio'
-import { collapse, formatDuration, splitBlob, stripHtml } from './html'
+import { collapse, formatDuration, pickYield, splitBlob, stripHtml } from './html'
 
 /**
  * schema.org/Recipe embedded as JSON-LD. Google requires it for the recipe
@@ -39,7 +39,7 @@ export function fromJsonLd($: cheerio.CheerioAPI): RawRecipe | undefined {
     prepTime: formatDuration(node.prepTime),
     cookTime: formatDuration(node.cookTime),
     totalTime: formatDuration(node.totalTime),
-    yield: firstString(node.recipeYield),
+    yield: pickYield(toStringList(node.recipeYield)),
     imageUrl: imageUrl(node.image),
     author: authorName(node.author),
     tags: tags(node)
@@ -144,11 +144,6 @@ function flattenInstructions(raw: unknown): string[] {
 
   visit(raw, 0)
   return out
-}
-
-function firstString(value: unknown): string | undefined {
-  const list = toStringList(value)
-  return list.find((entry) => entry.length > 0)
 }
 
 function imageUrl(value: unknown): string | undefined {

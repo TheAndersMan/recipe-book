@@ -61,6 +61,33 @@ export function formatDuration(value: unknown): string | undefined {
   return parts.length ? parts.join(' ') : undefined
 }
 
+/**
+ * `recipeYield` is frequently a bare number — schema.org treats that as the
+ * serving count, but "16" on its own next to the cook time reads as nothing at
+ * all. Label it, unless the site already told us what the number counts
+ * ("24 cookies", "1 loaf", "Serves 4"), in which case leave its wording alone.
+ */
+export function normalizeYield(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined
+  const raw = collapse(String(value))
+  if (!raw) return undefined
+
+  // A number, or a range of them: "4", "4-6", "4 to 6", "1.5".
+  const bareNumber = /^\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|to)\s*\d+(?:[.,]\d+)?)?$/i
+  if (!bareNumber.test(raw)) return raw
+
+  return raw === '1' ? '1 serving' : `${raw} servings`
+}
+
+/**
+ * Sites often publish several forms of the yield — `["16", "16 servings"]`.
+ * Prefer whichever one says what it's counting.
+ */
+export function pickYield(candidates: string[]): string | undefined {
+  const labelled = candidates.find((entry) => /[a-z]/i.test(entry))
+  return normalizeYield(labelled ?? candidates[0])
+}
+
 /** Split a blob that packed several steps into one string. */
 export function splitBlob(value: string): string[] {
   const text = stripHtmlPreservingBreaks(value)

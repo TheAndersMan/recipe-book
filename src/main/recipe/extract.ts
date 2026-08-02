@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import type { ExtractionMethod, Recipe } from '../../shared/types'
 import { fromClaude, NoRecipeFoundError } from './claude'
-import { collapse, pageText, siteName } from './html'
+import { collapse, normalizeYield, pageText, siteName } from './html'
 import { fromJsonLd, type RawRecipe } from './jsonld'
 import { fromMicrodata } from './microdata'
 
@@ -93,7 +93,7 @@ export async function extractFromText(
       prepTime: raw.prepTime,
       cookTime: raw.cookTime,
       totalTime: raw.totalTime,
-      yield: raw.yield,
+      yield: normalizeYield(raw.yield),
       sourceUrl,
       sourceName: sourceUrl ? hostOf(sourceUrl) : undefined,
       notes: raw.notes,
