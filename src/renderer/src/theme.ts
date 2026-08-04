@@ -116,24 +116,25 @@ export function applyAppearance(appearance: Appearance): void {
   root.setProperty('--accent', accentOnSurface)
 
   // Tinted chip backgrounds: mostly the card colour, a little accent.
-  root.setProperty('--accent-soft', mix(accent, theme.card, theme.dark ? 0.68 : 0.86))
-  // Text sitting on those chips needs to move away from the surface, not toward it.
-  root.setProperty(
-    '--accent-ink',
-    theme.dark ? mix(accent, '#ffffff', 0.62) : mix(accent, '#000000', 0.14)
-  )
+  const accentSoft = mix(accent, theme.card, theme.dark ? 0.68 : 0.86)
+  root.setProperty('--accent-soft', accentSoft)
+
+  // Text on those chips — step numbers, time pills. Plain white on a dark
+  // theme; on light themes white would vanish, so darken the accent instead.
+  root.setProperty('--accent-ink', theme.dark ? '#ffffff' : mix(accent, '#000000', 0.14))
+  root.setProperty('--on-accent-soft', bestForegroundOn(accentSoft))
 
   /*
-   * Foreground for anything sitting *on* the accent — the primary button. A
-   * lifted accent is light enough that white text on it drops to ~3.7:1, so
-   * pick whichever of white/near-black actually contrasts, rather than
-   * assuming white.
+   * Filled-button background. Saturation is pushed up so the primary action
+   * reads as the strongest thing on screen, then darkened if needed until
+   * white text on it clears 4.5:1 — that keeps the label white for any accent
+   * the user picks, including a pale custom hex.
    */
-  root.setProperty('--on-accent', bestForegroundOn(accentOnSurface))
+  root.setProperty('--accent-strong', strongAccent(accent))
 
-  // Destructive actions: the light-mode red is far too dark to read on a dark
-  // card (2.5:1), so lift it the same way.
-  root.setProperty('--danger', theme.dark ? mix(DANGER, '#ffffff', 0.5) : DANGER)
+  // Destructive actions. The light-mode red is unreadable on a dark card
+  // (2.5:1); dark themes get a bright saturated red instead.
+  root.setProperty('--danger', theme.dark ? DANGER_DARK : DANGER)
 
   root.setProperty('--font-recipe', FONT_STACKS[appearance.recipeFont] ?? FONT_STACKS.serif)
   root.setProperty('--text-scale', String(clampScale(appearance.textScale)))
@@ -147,8 +148,9 @@ export function applyAppearance(appearance: Appearance): void {
   void window.api?.setWindowBackground(theme.paper)
 }
 
-/** Base red for destructive actions; lifted per-theme in applyAppearance. */
+/** Destructive-action red: deep on light surfaces, bright on dark ones. */
 const DANGER = '#a33224'
+const DANGER_DARK = '#ff4136'
 
 function relativeLuminance(hex: string): number {
   const channels = [1, 3, 5]
@@ -166,6 +168,57 @@ function contrastRatio(a: string, b: string): number {
 function bestForegroundOn(background: string): string {
   const dark = '#17120f'
   return contrastRatio('#ffffff', background) >= contrastRatio(dark, background) ? '#ffffff' : dark
+}
+
+/**
+ * A punchier version of the accent for filled buttons: more saturated, then
+ * darkened only as far as it takes for white text to stay legible on it.
+ */
+function strongAccent(accent: string): string {
+  const [h, s, l] = toHsl(accent)
+  let colour = fromHsl(h, Math.min(1, s * 1.3), l)
+
+  // Bounded loop — each step is a fixed 6% toward black, so it terminates.
+  for (let i = 0; i < 12 && contrastRatio('#ffffff', colour) < 4.5; i++) {
+    colour = mix(colour, '#000000', 0.06)
+  }
+  return colour
+}
+
+function toHsl(hex: string): [number, number, number] {
+  const [r, g, b] = parseHex(hex).map((c) => c / 255)
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const lightness = (max + min) / 2
+  const delta = max - min
+
+  if (delta === 0) return [0, 0, lightness]
+
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1))
+  let hue: number
+  if (max === r) hue = ((g - b) / delta) % 6
+  else if (max === g) hue = (b - r) / delta + 2
+  else hue = (r - g) / delta + 4
+
+  return [((hue * 60) + 360) % 360, saturation, lightness]
+}
+
+function fromHsl(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l - c / 2
+
+  const [r, g, b] =
+    h < 60 ? [c, x, 0]
+    : h < 120 ? [x, c, 0]
+    : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c]
+    : h < 300 ? [x, 0, c]
+    : [c, 0, x]
+
+  return `#${[r, g, b]
+    .map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, '0'))
+    .join('')}`
 }
 
 function clampScale(value: number): number {

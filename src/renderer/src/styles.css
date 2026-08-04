@@ -14,8 +14,9 @@
   --accent: #9a4f2b;
   --accent-soft: #f2e6df;
   --accent-ink: #6f3a1f;
-  /* Both are recomputed per theme by theme.ts — see applyAppearance. */
-  --on-accent: #ffffff;
+  /* All recomputed per theme by theme.ts — see applyAppearance. */
+  --accent-strong: #8f4726;
+  --on-accent-soft: #6f3a1f;
   --danger: #a33224;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -352,9 +353,21 @@ select {
 }
 
 .button--primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+
+/*
+ * Unavailable primary: drops to the same tint the step numbers and time pills
+ * sit on, rather than the generic opacity fade — it reads as "not yet" instead
+ * of as a faded version of the live button.
+ */
+.button--primary:disabled {
+  opacity: 1;
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+  color: var(--on-accent-soft);
 }
 
 .button--danger {
@@ -466,6 +479,7 @@ select {
 
 .recipe__source a {
   color: var(--accent);
+  font-weight: 600;
   text-decoration: none;
 }
 
