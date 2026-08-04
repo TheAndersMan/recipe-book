@@ -265,6 +265,10 @@ select {
   line-height: 1.3;
 }
 
+.recipe-chip--active .recipe-chip__title {
+  font-weight: 600;
+}
+
 .recipe-chip__meta {
   font-size: 11.5px;
   color: var(--ink-soft);
@@ -341,6 +345,7 @@ select {
   background: var(--card);
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .button:hover:not(:disabled) {

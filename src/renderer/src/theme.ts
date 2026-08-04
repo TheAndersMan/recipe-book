@@ -122,7 +122,14 @@ export function applyAppearance(appearance: Appearance): void {
   // Text on those chips — step numbers, time pills. Plain white on a dark
   // theme; on light themes white would vanish, so darken the accent instead.
   root.setProperty('--accent-ink', theme.dark ? '#ffffff' : mix(accent, '#000000', 0.14))
-  root.setProperty('--on-accent-soft', bestForegroundOn(accentSoft))
+
+  /*
+   * Label for the disabled primary button. Off-white rather than the full
+   * white used on live chips — enough to read clearly, soft enough to say the
+   * button isn't ready. Light themes keep a dark label; off-white would vanish
+   * on a near-white chip.
+   */
+  root.setProperty('--on-accent-soft', theme.dark ? '#e8e1da' : bestForegroundOn(accentSoft))
 
   /*
    * Filled-button background. Saturation is pushed up so the primary action
