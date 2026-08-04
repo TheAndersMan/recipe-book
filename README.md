@@ -99,6 +99,27 @@ The file is the source of truth — there's no database. Edit them by hand, grep
 them, put them in git, sync them. `### ` inside a section is a group heading
 ("For the glaze") and round-trips correctly.
 
+## Organizing
+
+**Folders** are a `folder:` line in the frontmatter, not directories on disk.
+That keeps recipe ids stable (they're the filename), keeps the directory flat
+and greppable, and means a folder is just a value a recipe carries.
+
+The consequence worth knowing: there is nothing to create or delete. A folder
+exists because some recipe names it, and it's gone once none do. Renaming one
+across recipes is a find-and-replace in your editor, and it'll be picked up on
+the next read.
+
+**Favorites** are `favorite: true`, written only when set so unstarred files
+stay clean. Starred recipes are pinned to a section at the top of the sidebar
+*and* still listed in their folder — starring shouldn't make a recipe vanish
+from where you filed it.
+
+**Sorting** (recently added / title / quickest first) is in the sidebar and
+persists in settings. Sorting by time parses the stored human strings
+("1 hr 37 min", "45") back into minutes; anything unparseable ("overnight")
+sorts last rather than pretending to be zero. See `renderer/src/sorting.ts`.
+
 ## The API key
 
 Stored encrypted via Electron's `safeStorage`, which on macOS is backed by the

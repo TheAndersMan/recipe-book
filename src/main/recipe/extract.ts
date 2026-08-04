@@ -98,6 +98,7 @@ export async function extractFromText(
       sourceName: sourceUrl ? hostOf(sourceUrl) : undefined,
       notes: raw.notes,
       tags: raw.tags,
+      favorite: false,
       savedAt: new Date().toISOString(),
       extractedBy: 'claude'
     },
@@ -133,6 +134,7 @@ function assemble(
     sourceName: siteName($, url) ?? hostOf(url),
     imageUrl: image && /^https?:\/\//i.test(image) ? image : undefined,
     tags: raw.tags,
+    favorite: false,
     savedAt: new Date().toISOString(),
     extractedBy: method
   }

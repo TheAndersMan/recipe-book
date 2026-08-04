@@ -8,9 +8,21 @@
 
 export type ExtractionMethod = 'json-ld' | 'microdata' | 'claude' | 'manual'
 
+/** How the sidebar orders recipes. Persisted in settings. */
+export type SortMode = 'recent' | 'title' | 'time'
+
+export const SORT_LABELS: Record<SortMode, string> = {
+  recent: 'Recently added',
+  title: 'Title A–Z',
+  time: 'Quickest first'
+}
+
 export interface Recipe {
   id: string
   title: string
+  /** Single optional folder name. Absent means unfiled. */
+  folder?: string
+  favorite: boolean
   description?: string
   ingredients: string[]
   instructions: string[]
@@ -30,6 +42,8 @@ export interface Recipe {
 export interface RecipeSummary {
   id: string
   title: string
+  folder?: string
+  favorite: boolean
   sourceName?: string
   totalTime?: string
   tags: string[]
@@ -59,6 +73,7 @@ export interface Settings {
   hasApiKey: boolean
   recipesDir: string
   model: string
+  sort: SortMode
   appearance: Appearance
 }
 

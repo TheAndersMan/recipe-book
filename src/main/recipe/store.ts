@@ -12,6 +12,8 @@ import { normalizeYield } from './html'
 
 interface Frontmatter {
   title?: string
+  folder?: string
+  favorite?: boolean
   source_url?: string
   source_name?: string
   image_url?: string
@@ -56,6 +58,8 @@ export class RecipeStore {
         summaries.push({
           id: recipe.id,
           title: recipe.title,
+          folder: recipe.folder,
+          favorite: recipe.favorite,
           sourceName: recipe.sourceName,
           totalTime: recipe.totalTime,
           tags: recipe.tags,
@@ -94,6 +98,29 @@ export class RecipeStore {
     await fs.rm(this.pathFor(id), { force: true })
   }
 
+  async setFavorite(id: string, favorite: boolean): Promise<Recipe> {
+    return this.update({ ...(await this.read(id)), favorite })
+  }
+
+  /** Pass null (or blank) to unfile a recipe. */
+  async setFolder(id: string, folder: string | null): Promise<Recipe> {
+    const named = folder?.trim()
+    return this.update({ ...(await this.read(id)), folder: named ? named : undefined })
+  }
+
+  /**
+   * Folders exist only as values on recipes — there is nothing to create or
+   * delete. A folder appears when a recipe names it and is gone once no recipe
+   * does, which also means renaming one in a text editor just works.
+   */
+  async folders(): Promise<string[]> {
+    const names = new Set<string>()
+    for (const summary of await this.list()) {
+      if (summary.folder) names.add(summary.folder)
+    }
+    return [...names].sort((a, b) => a.localeCompare(b))
+  }
+
   private async uniqueId(base: string): Promise<string> {
     let candidate = base
     let n = 2
@@ -128,6 +155,9 @@ export function slugify(title: string): string {
 export function toMarkdown(recipe: Recipe): string {
   const frontmatter: Frontmatter = {
     title: recipe.title,
+    folder: recipe.folder,
+    // Only written when true, so unstarred files stay clean.
+    favorite: recipe.favorite ? true : undefined,
     source_url: recipe.sourceUrl,
     source_name: recipe.sourceName,
     image_url: recipe.imageUrl,
@@ -192,6 +222,8 @@ export function parseMarkdown(raw: string, id: string): Recipe {
   return {
     id,
     title: frontmatter.title?.trim() || id,
+    folder: frontmatter.folder?.toString().trim() || undefined,
+    favorite: frontmatter.favorite === true,
     description: sections.intro || undefined,
     ingredients: parseList(sections.Ingredients ?? ''),
     instructions: parseList(sections.Instructions ?? ''),

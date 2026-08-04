@@ -5,7 +5,8 @@ import type {
   ImportResult,
   Recipe,
   RecipeSummary,
-  Settings
+  Settings,
+  SortMode
 } from '../shared/types'
 
 /**
@@ -28,12 +29,18 @@ const api = {
       apiKey?: string | null
       recipesDir?: string
       model?: string
+      sort?: SortMode
       appearance?: Partial<Appearance>
     }): Promise<Settings> => invoke('settings:set', patch),
     pickDir: (): Promise<string | null> => invoke('settings:pickDir')
   },
   recipes: {
     list: (): Promise<RecipeSummary[]> => invoke('recipes:list'),
+    folders: (): Promise<string[]> => invoke('recipes:folders'),
+    setFavorite: (id: string, favorite: boolean): Promise<Recipe> =>
+      invoke('recipes:setFavorite', { id, favorite }),
+    setFolder: (id: string, folder: string | null): Promise<Recipe> =>
+      invoke('recipes:setFolder', { id, folder }),
     get: (id: string): Promise<Recipe> => invoke('recipes:get', id),
     save: (recipe: Recipe): Promise<Recipe> => invoke('recipes:save', recipe),
     remove: (id: string): Promise<void> => invoke('recipes:delete', id),

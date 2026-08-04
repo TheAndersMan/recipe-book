@@ -124,9 +124,78 @@ select {
   border-color: var(--accent);
 }
 
+.sidebar__sort {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  outline: none;
+}
+
+.sidebar__sort:focus {
+  border-color: var(--accent);
+}
+
+/* ---------- groups ---------- */
+
+.group {
+  margin-top: 6px;
+}
+
+.group__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.group__head:hover {
+  background: var(--chip-hover);
+  color: var(--ink);
+}
+
+.group__caret {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform 0.12s ease;
+}
+
+.group__head--collapsed .group__caret {
+  transform: rotate(0deg);
+}
+
+.group__label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group__count {
+  font-size: 10.5px;
+  opacity: 0.7;
+}
+
 .sidebar__list {
   list-style: none;
-  margin: 0;
+  margin: 0 0 2px;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -135,15 +204,8 @@ select {
 
 .recipe-chip {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
-  border: none;
+  align-items: stretch;
   border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
 }
 
 .recipe-chip:hover {
@@ -152,6 +214,47 @@ select {
 
 .recipe-chip--active {
   background: var(--accent-soft);
+}
+
+.recipe-chip__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 4px 8px 10px;
+  border: none;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.recipe-chip__star {
+  display: flex;
+  align-items: center;
+  padding: 0 9px 0 5px;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  cursor: pointer;
+  /* Only shows on hover, on the active row, or when already starred. */
+  color: transparent;
+}
+
+.recipe-chip:hover .recipe-chip__star,
+.recipe-chip--active .recipe-chip__star {
+  color: var(--ink-soft);
+}
+
+.recipe-chip__star:hover {
+  color: var(--accent) !important;
+}
+
+.recipe-chip__star--on,
+.recipe-chip:hover .recipe-chip__star--on,
+.recipe-chip--active .recipe-chip__star--on {
+  color: var(--accent);
 }
 
 .recipe-chip__title {
@@ -398,6 +501,54 @@ select {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 8px;
+}
+
+.recipe__filing {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.button--star {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.button--star-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.filing__folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filing__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.filing__input {
+  width: 170px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--card);
+  outline: none;
+  font-size: 13.5px;
+}
+
+.filing__input:focus {
+  border-color: var(--accent);
 }
 
 .recipe__body {

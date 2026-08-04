@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app, safeStorage } from 'electron'
-import { DEFAULT_APPEARANCE, type Appearance } from '../shared/types'
+import { DEFAULT_APPEARANCE, SORT_LABELS, type Appearance, type SortMode } from '../shared/types'
 
 /**
  * The API key is encrypted with Electron's safeStorage, which on macOS is
@@ -15,6 +15,7 @@ interface StoredSettings {
   apiKeyPlain?: string
   recipesDir?: string
   model?: string
+  sort?: SortMode
   appearance?: Partial<Appearance>
 }
 
@@ -83,6 +84,17 @@ export class SettingsStore {
 
   async setModel(model: string): Promise<void> {
     this.cache.model = model.trim() || DEFAULT_MODEL
+    await this.persist()
+  }
+
+  get sort(): SortMode {
+    const stored = this.cache.sort
+    return stored && stored in SORT_LABELS ? stored : 'recent'
+  }
+
+  async setSort(sort: SortMode): Promise<void> {
+    if (!(sort in SORT_LABELS)) return
+    this.cache.sort = sort
     await this.persist()
   }
 

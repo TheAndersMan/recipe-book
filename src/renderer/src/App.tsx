@@ -15,14 +15,30 @@ export interface Notice {
 
 export default function App(): JSX.Element {
   const [summaries, setSummaries] = useState<RecipeSummary[]>([])
+  const [folders, setFolders] = useState<string[]>([])
   const [selected, setSelected] = useState<Recipe | null>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [banner, setBanner] = useState<Notice | null>(null)
 
   const refresh = useCallback(async () => {
-    setSummaries(await window.api.recipes.list())
+    const [list, names] = await Promise.all([
+      window.api.recipes.list(),
+      window.api.recipes.folders()
+    ])
+    setSummaries(list)
+    setFolders(names)
   }, [])
+
+  /** Both filing actions write the file, then re-read what's on disk. */
+  const applyFiling = useCallback(
+    async (id: string, change: () => Promise<Recipe>) => {
+      const updated = await change()
+      setSelected((current) => (current?.id === id ? updated : current))
+      await refresh()
+    },
+    [refresh]
+  )
 
   useEffect(() => {
     void (async () => {
@@ -76,7 +92,12 @@ export default function App(): JSX.Element {
       <Sidebar
         summaries={summaries}
         selectedId={selected?.id ?? null}
+        sort={settings?.sort ?? 'recent'}
         onSelect={select}
+        onSort={async (sort) => setSettings(await window.api.settings.set({ sort }))}
+        onToggleFavorite={(id, favorite) =>
+          void applyFiling(id, () => window.api.recipes.setFavorite(id, favorite))
+        }
         onOpenSettings={() => setShowSettings(true)}
       />
 
@@ -108,9 +129,16 @@ export default function App(): JSX.Element {
         {selected ? (
           <RecipeView
             recipe={selected}
+            folders={folders}
             onDelete={onDelete}
             onSave={onSave}
             onNotice={(notice) => setBanner(notice)}
+            onToggleFavorite={(id, favorite) =>
+              void applyFiling(id, () => window.api.recipes.setFavorite(id, favorite))
+            }
+            onSetFolder={(id, folder) =>
+              void applyFiling(id, () => window.api.recipes.setFolder(id, folder))
+            }
           />
         ) : (
           <EmptyState count={summaries.length} />

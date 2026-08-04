@@ -7,7 +7,8 @@ import type {
   ImportResult,
   Recipe,
   RecipeSummary,
-  Settings
+  Settings,
+  SortMode
 } from '../shared/types'
 import { renderFitted } from './pdf'
 import { extractFromText, extractFromUrl } from './recipe/extract'
@@ -35,6 +36,7 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
     hasApiKey: Boolean(settings.apiKey),
     recipesDir: settings.recipesDir,
     model: settings.model,
+    sort: settings.sort,
     appearance: settings.appearance
   })
 
@@ -46,10 +48,12 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
       apiKey?: string | null
       recipesDir?: string
       model?: string
+      sort?: SortMode
       appearance?: Partial<Appearance>
     }) => {
       if (patch.apiKey !== undefined) await settings.setApiKey(patch.apiKey)
       if (patch.model !== undefined) await settings.setModel(patch.model)
+      if (patch.sort !== undefined) await settings.setSort(patch.sort)
       if (patch.appearance !== undefined) await settings.setAppearance(patch.appearance)
       if (patch.recipesDir !== undefined) {
         await settings.setRecipesDir(patch.recipesDir)
@@ -72,6 +76,15 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
   })
 
   handle<RecipeSummary[]>('recipes:list', async () => store.list())
+  handle<string[]>('recipes:folders', async () => store.folders())
+
+  handle<Recipe>('recipes:setFavorite', async (payload: { id: string; favorite: boolean }) =>
+    store.setFavorite(payload.id, payload.favorite)
+  )
+
+  handle<Recipe>('recipes:setFolder', async (payload: { id: string; folder: string | null }) =>
+    store.setFolder(payload.id, payload.folder)
+  )
   handle<Recipe>('recipes:get', async (id: string) => store.read(id))
   handle<Recipe>('recipes:save', async (recipe: Recipe) => store.update(recipe))
   handle<void>('recipes:delete', async (id: string) => store.remove(id))

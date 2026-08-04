@@ -4,16 +4,28 @@ import type { Notice } from '../App'
 
 interface Props {
   recipe: Recipe
+  folders: string[]
   onDelete: (id: string) => void
   onSave: (recipe: Recipe) => void
   onNotice: (notice: Notice) => void
+  onToggleFavorite: (id: string, favorite: boolean) => void
+  onSetFolder: (id: string, folder: string | null) => void
 }
 
-export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props): JSX.Element {
+export default function RecipeView({
+  recipe,
+  folders,
+  onDelete,
+  onSave,
+  onNotice,
+  onToggleFavorite,
+  onSetFolder
+}: Props): JSX.Element {
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState(recipe.notes ?? '')
   const [editingNotes, setEditingNotes] = useState(false)
   const [busy, setBusy] = useState<'print' | 'pdf' | null>(null)
+  const [folder, setFolder] = useState(recipe.folder ?? '')
 
   const fail = (error: unknown): void =>
     onNotice({ tone: 'error', text: error instanceof Error ? error.message : String(error) })
@@ -23,7 +35,14 @@ export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props
     setChecked(new Set())
     setNotes(recipe.notes ?? '')
     setEditingNotes(false)
-  }, [recipe.id, recipe.notes])
+    setFolder(recipe.folder ?? '')
+  }, [recipe.id, recipe.notes, recipe.folder])
+
+  const commitFolder = (): void => {
+    const next = folder.trim()
+    if (next === (recipe.folder ?? '')) return
+    onSetFolder(recipe.id, next || null)
+  }
 
   const toggle = (index: number): void => {
     setChecked((current) => {
@@ -71,6 +90,39 @@ export default function RecipeView({ recipe, onDelete, onSave, onNotice }: Props
         )}
 
         {recipe.description && <p className="recipe__description">{recipe.description}</p>}
+
+        <div className="recipe__filing no-print">
+          <button
+            className={`button button--star${recipe.favorite ? ' button--star-on' : ''}`}
+            onClick={() => onToggleFavorite(recipe.id, !recipe.favorite)}
+            title={recipe.favorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <span aria-hidden="true">{recipe.favorite ? '★' : '☆'}</span>
+            {recipe.favorite ? 'Favorited' : 'Favorite'}
+          </button>
+
+          <label className="filing__folder">
+            <span className="filing__label">Folder</span>
+            <input
+              className="filing__input"
+              list="folder-names"
+              placeholder="Unfiled"
+              value={folder}
+              spellCheck={false}
+              onChange={(event) => setFolder(event.target.value)}
+              onBlur={commitFolder}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') event.currentTarget.blur()
+                if (event.key === 'Escape') setFolder(recipe.folder ?? '')
+              }}
+            />
+            <datalist id="folder-names">
+              {folders.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </label>
+        </div>
 
         <div className="recipe__actions no-print">
           <button
