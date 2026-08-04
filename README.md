@@ -197,8 +197,25 @@ colour (seven presets or any hex), recipe font (serif/sans), and text size.
 The two dark themes keep their surfaces desaturated — neutral charcoal for
 Night, blue for Midnight. An earlier warm-brown dark sat close to the terracotta
 accent in hue and made everything look muddy; keeping surfaces neutral lets the
-accent be the only colour on screen. On dark themes the accent is also lifted
-toward white before use, or it sinks into the background and reads as grey.
+accent be the only colour on screen.
+
+### Deriving colours for dark themes
+
+A palette that reads well in light mode does not survive being dropped onto a
+dark surface. Three values are recomputed rather than reused:
+
+- **`--accent`** is lifted toward white on dark themes. The raw hex sinks into a
+  dark background, leaving small accent-coloured text (source links, ingredient
+  group headings) barely above the readable threshold.
+- **`--on-accent`** is whichever of white / near-black actually contrasts with
+  the accent, rather than an assumed white. A lifted accent is light enough that
+  white on it falls to ~3.7:1, so the primary button flips to dark text on dark
+  themes.
+- **`--danger`** is lifted the same way. The light-mode red on a dark card is
+  2.5:1 — effectively unreadable.
+
+The check that matters is the worst case across all 5 themes × 7 accent presets,
+not the default pairing. Every element clears 4.5:1 there; body text clears 13:1.
 
 Everything routes through CSS custom properties. `src/renderer/src/theme.ts`
 holds the theme palettes and derives the accent tints — `--accent-soft` for chip

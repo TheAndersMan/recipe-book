@@ -14,6 +14,8 @@
   --accent: #9a4f2b;
   --accent-soft: #f2e6df;
   --accent-ink: #6f3a1f;
+  /* Both are recomputed per theme by theme.ts — see applyAppearance. */
+  --on-accent: #ffffff;
   --danger: #a33224;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -352,7 +354,7 @@ select {
 .button--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .button--danger {

@@ -109,16 +109,31 @@ export function applyAppearance(appearance: Appearance): void {
   root.setProperty('--ink-soft', theme.inkSoft)
   root.setProperty('--line', theme.line)
 
-  // On dark surfaces the accent has to stay brighter than the raw hex, or it
-  // sinks into the background and reads as grey.
-  root.setProperty('--accent', theme.dark ? mix(accent, '#ffffff', 0.22) : accent)
+  // On dark surfaces the accent has to be lifted well clear of the background,
+  // or small accent-coloured text (source links, group headings) sits barely
+  // above the readable threshold.
+  const accentOnSurface = theme.dark ? mix(accent, '#ffffff', 0.36) : accent
+  root.setProperty('--accent', accentOnSurface)
+
   // Tinted chip backgrounds: mostly the card colour, a little accent.
-  root.setProperty('--accent-soft', mix(accent, theme.card, theme.dark ? 0.72 : 0.86))
+  root.setProperty('--accent-soft', mix(accent, theme.card, theme.dark ? 0.68 : 0.86))
   // Text sitting on those chips needs to move away from the surface, not toward it.
   root.setProperty(
     '--accent-ink',
-    theme.dark ? mix(accent, '#ffffff', 0.55) : mix(accent, '#000000', 0.14)
+    theme.dark ? mix(accent, '#ffffff', 0.62) : mix(accent, '#000000', 0.14)
   )
+
+  /*
+   * Foreground for anything sitting *on* the accent — the primary button. A
+   * lifted accent is light enough that white text on it drops to ~3.7:1, so
+   * pick whichever of white/near-black actually contrasts, rather than
+   * assuming white.
+   */
+  root.setProperty('--on-accent', bestForegroundOn(accentOnSurface))
+
+  // Destructive actions: the light-mode red is far too dark to read on a dark
+  // card (2.5:1), so lift it the same way.
+  root.setProperty('--danger', theme.dark ? mix(DANGER, '#ffffff', 0.5) : DANGER)
 
   root.setProperty('--font-recipe', FONT_STACKS[appearance.recipeFont] ?? FONT_STACKS.serif)
   root.setProperty('--text-scale', String(clampScale(appearance.textScale)))
@@ -130,6 +145,27 @@ export function applyAppearance(appearance: Appearance): void {
   // colour. Main also needs this value to restore after printing, where the
   // window background has to be white — see pdf.ts.
   void window.api?.setWindowBackground(theme.paper)
+}
+
+/** Base red for destructive actions; lifted per-theme in applyAppearance. */
+const DANGER = '#a33224'
+
+function relativeLuminance(hex: string): number {
+  const channels = [1, 3, 5]
+    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+}
+
+function contrastRatio(a: string, b: string): number {
+  const [lighter, darker] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x)
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+/** Whichever of white / near-black is more readable on the given colour. */
+function bestForegroundOn(background: string): string {
+  const dark = '#17120f'
+  return contrastRatio('#ffffff', background) >= contrastRatio(dark, background) ? '#ffffff' : dark
 }
 
 function clampScale(value: number): number {
