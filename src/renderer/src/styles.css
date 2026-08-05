@@ -499,7 +499,7 @@ select {
   opacity: 0;
 }
 
-.recipe__header:hover .title__edit,
+.title__row:hover .title__edit,
 .title__edit:focus-visible {
   opacity: 1;
 }
@@ -551,7 +551,7 @@ select {
   opacity: 0;
 }
 
-.recipe__header:hover .source__edit,
+.recipe__source:hover .source__edit,
 .source__edit:focus-visible {
   opacity: 1;
 }
@@ -646,7 +646,7 @@ select {
   opacity: 0;
 }
 
-.recipe__header:hover .description__edit,
+.description__row:hover .description__edit,
 .description__edit:focus-visible {
   opacity: 1;
 }
@@ -669,7 +669,8 @@ select {
   font-family: var(--font-recipe);
   font-size: calc(16.5px * var(--text-scale));
   line-height: 1.6;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   outline: none;
 }
 
@@ -755,6 +756,72 @@ select {
   text-transform: uppercase;
   color: var(--ink-soft);
   margin: 0 0 14px;
+}
+
+.section__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section__edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.recipe__ingredients:hover .section__edit,
+.recipe__instructions:hover .section__edit,
+.section__edit:focus-visible {
+  opacity: 1;
+}
+
+.section__edit:hover {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+/* ---------- editing a list as text ---------- */
+
+.list-editor__input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--font-recipe);
+  font-size: calc(15px * var(--text-scale));
+  line-height: 1.55;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+}
+
+.list-editor__hint {
+  margin: 7px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.list-editor__hint code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 11px;
 }
 
 .ingredients {
