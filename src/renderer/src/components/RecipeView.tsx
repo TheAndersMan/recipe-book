@@ -45,6 +45,8 @@ export default function RecipeView({
   const [editingSource, setEditingSource] = useState(false)
   const [title, setTitle] = useState(recipe.title)
   const [editingTitle, setEditingTitle] = useState(false)
+  const [description, setDescription] = useState(recipe.description ?? '')
+  const [editingDescription, setEditingDescription] = useState(false)
 
   const fail = (error: unknown): void =>
     onNotice({ tone: 'error', text: error instanceof Error ? error.message : String(error) })
@@ -59,7 +61,23 @@ export default function RecipeView({
     setEditingSource(false)
     setTitle(recipe.title)
     setEditingTitle(false)
-  }, [recipe.id, recipe.notes, recipe.folder, recipe.sourceName, recipe.title])
+    setDescription(recipe.description ?? '')
+    setEditingDescription(false)
+  }, [
+    recipe.id,
+    recipe.notes,
+    recipe.folder,
+    recipe.sourceName,
+    recipe.title,
+    recipe.description
+  ])
+
+  const commitDescription = (): void => {
+    setEditingDescription(false)
+    const next = description.trim()
+    if (next === (recipe.description ?? '')) return
+    onSave({ ...recipe, description: next || undefined })
+  }
 
   const commitTitle = (): void => {
     setEditingTitle(false)
@@ -194,7 +212,39 @@ export default function RecipeView({
           </ul>
         )}
 
-        {recipe.description && <p className="recipe__description">{recipe.description}</p>}
+        {editingDescription || !recipe.description ? (
+          /* Editing, or nothing written yet. Never printed — an empty box on
+             paper is worse than no description at all. */
+          <textarea
+            className="description__input no-print"
+            value={description}
+            placeholder="Add a description"
+            aria-label="Description"
+            rows={2}
+            autoFocus={editingDescription}
+            onChange={(event) => setDescription(event.target.value)}
+            onBlur={commitDescription}
+            onKeyDown={(event) => {
+              // Enter inserts a line break here; Escape backs out.
+              if (event.key === 'Escape') {
+                setDescription(recipe.description ?? '')
+                setEditingDescription(false)
+              }
+            }}
+          />
+        ) : (
+          <div className="description__row">
+            <p className="recipe__description">{recipe.description}</p>
+            <button
+              className="description__edit no-print"
+              onClick={() => setEditingDescription(true)}
+              title="Edit description"
+              aria-label="Edit description"
+            >
+              <PencilIcon />
+            </button>
+          </div>
+        )}
 
         <div className="recipe__filing no-print">
           <button

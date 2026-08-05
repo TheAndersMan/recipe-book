@@ -615,6 +615,72 @@ select {
   line-height: 1.6;
   color: var(--ink-soft);
   margin: 0 0 20px;
+  white-space: pre-wrap;
+}
+
+.description__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.description__row .recipe__description {
+  flex: 1;
+  min-width: 0;
+}
+
+.description__edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.recipe__header:hover .description__edit,
+.description__edit:focus-visible {
+  opacity: 1;
+}
+
+.description__edit:hover {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+/* Matches the prose it replaces, so the block doesn't jump when opened. */
+.description__input {
+  display: block;
+  width: 100%;
+  margin: 0 0 20px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-family: var(--font-recipe);
+  font-size: calc(16.5px * var(--text-scale));
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+
+.description__input::placeholder {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+.description__input:focus {
+  border-color: var(--accent);
 }
 
 .recipe__actions {
