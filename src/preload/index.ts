@@ -37,6 +37,7 @@ const api = {
   recipes: {
     list: (): Promise<RecipeSummary[]> => invoke('recipes:list'),
     folders: (): Promise<string[]> => invoke('recipes:folders'),
+    rename: (id: string, title: string): Promise<Recipe> => invoke('recipes:rename', { id, title }),
     setFavorite: (id: string, favorite: boolean): Promise<Recipe> =>
       invoke('recipes:setFavorite', { id, favorite }),
     setFolder: (id: string, folder: string | null): Promise<Recipe> =>

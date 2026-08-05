@@ -139,6 +139,13 @@ export default function App(): JSX.Element {
             onSetFolder={(id, folder) =>
               void applyFiling(id, () => window.api.recipes.setFolder(id, folder))
             }
+            onRename={async (id, title) => {
+              // Renaming moves the file, so the recipe comes back under a new
+              // id — take whatever the store returns rather than matching ids.
+              const renamed = await window.api.recipes.rename(id, title)
+              setSelected(renamed)
+              await refresh()
+            }}
           />
         ) : (
           <EmptyState count={summaries.length} />

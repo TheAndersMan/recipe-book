@@ -23,6 +23,7 @@ interface Props {
   onNotice: (notice: Notice) => void
   onToggleFavorite: (id: string, favorite: boolean) => void
   onSetFolder: (id: string, folder: string | null) => void
+  onRename: (id: string, title: string) => void
 }
 
 export default function RecipeView({
@@ -32,7 +33,8 @@ export default function RecipeView({
   onSave,
   onNotice,
   onToggleFavorite,
-  onSetFolder
+  onSetFolder,
+  onRename
 }: Props): JSX.Element {
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [notes, setNotes] = useState(recipe.notes ?? '')
@@ -41,6 +43,8 @@ export default function RecipeView({
   const [folder, setFolder] = useState(recipe.folder ?? '')
   const [sourceName, setSourceName] = useState(recipe.sourceName ?? '')
   const [editingSource, setEditingSource] = useState(false)
+  const [title, setTitle] = useState(recipe.title)
+  const [editingTitle, setEditingTitle] = useState(false)
 
   const fail = (error: unknown): void =>
     onNotice({ tone: 'error', text: error instanceof Error ? error.message : String(error) })
@@ -53,7 +57,21 @@ export default function RecipeView({
     setFolder(recipe.folder ?? '')
     setSourceName(recipe.sourceName ?? '')
     setEditingSource(false)
-  }, [recipe.id, recipe.notes, recipe.folder, recipe.sourceName])
+    setTitle(recipe.title)
+    setEditingTitle(false)
+  }, [recipe.id, recipe.notes, recipe.folder, recipe.sourceName, recipe.title])
+
+  const commitTitle = (): void => {
+    setEditingTitle(false)
+    const next = title.trim()
+    // A recipe with no title would have nothing to file it under, so an empty
+    // field reverts rather than saving.
+    if (!next) {
+      setTitle(recipe.title)
+      return
+    }
+    if (next !== recipe.title) onRename(recipe.id, next)
+  }
 
   const commitSource = (): void => {
     setEditingSource(false)
@@ -89,7 +107,36 @@ export default function RecipeView({
   return (
     <article className="recipe">
       <header className="recipe__header">
-        <h1 className="recipe__title">{recipe.title}</h1>
+        {editingTitle ? (
+          <input
+            className="recipe__title title__input"
+            value={title}
+            aria-label="Recipe title"
+            spellCheck={false}
+            autoFocus
+            onChange={(event) => setTitle(event.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur()
+              if (event.key === 'Escape') {
+                setTitle(recipe.title)
+                setEditingTitle(false)
+              }
+            }}
+          />
+        ) : (
+          <div className="title__row">
+            <h1 className="recipe__title">{recipe.title}</h1>
+            <button
+              className="title__edit no-print"
+              onClick={() => setEditingTitle(true)}
+              title="Rename recipe"
+              aria-label="Rename recipe"
+            >
+              <PencilIcon />
+            </button>
+          </div>
+        )}
 
         {/* Editable whether or not the recipe came with a source name — a
             pasted recipe has none, and sites often give an unhelpful one. */}

@@ -99,6 +99,12 @@ The file is the source of truth — there's no database. Edit them by hand, grep
 them, put them in git, sync them. `### ` inside a section is a group heading
 ("For the glaze") and round-trips correctly.
 
+The filename is the recipe's id, derived from its title. **Retitling a recipe
+in the app moves the file** so the two don't drift apart — the new file is
+written before the old one is removed, and a title that would collide with an
+existing recipe gets a numeric suffix rather than overwriting it. Nothing else
+references ids, so this is safe.
+
 ## Organizing
 
 **Folders** are a `folder:` line in the frontmatter, not directories on disk.

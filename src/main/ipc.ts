@@ -78,6 +78,10 @@ export function registerIpc(settings: SettingsStore, store: RecipeStore): void {
   handle<RecipeSummary[]>('recipes:list', async () => store.list())
   handle<string[]>('recipes:folders', async () => store.folders())
 
+  handle<Recipe>('recipes:rename', async (payload: { id: string; title: string }) =>
+    store.rename(payload.id, payload.title)
+  )
+
   handle<Recipe>('recipes:setFavorite', async (payload: { id: string; favorite: boolean }) =>
     store.setFavorite(payload.id, payload.favorite)
   )

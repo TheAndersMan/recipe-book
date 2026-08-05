@@ -98,6 +98,27 @@ export class RecipeStore {
     await fs.rm(this.pathFor(id), { force: true })
   }
 
+  /**
+   * Retitling moves the file too, so the filename keeps matching the recipe —
+   * ids are derived from the title and nothing else references them. Writes
+   * the new file before removing the old one, so a failure can't lose the
+   * recipe. Returns the recipe under its new id.
+   */
+  async rename(id: string, title: string): Promise<Recipe> {
+    const recipe = await this.read(id)
+    const clean = title.trim()
+    if (!clean || clean === recipe.title) return recipe
+
+    const desired = slugify(clean)
+    if (desired === id) return this.update({ ...recipe, title: clean })
+
+    const nextId = await this.uniqueId(desired)
+    const moved: Recipe = { ...recipe, id: nextId, title: clean }
+    await fs.writeFile(this.pathFor(nextId), toMarkdown(moved), 'utf8')
+    await fs.rm(this.pathFor(id), { force: true })
+    return moved
+  }
+
   async setFavorite(id: string, favorite: boolean): Promise<Recipe> {
     return this.update({ ...(await this.read(id)), favorite })
   }
