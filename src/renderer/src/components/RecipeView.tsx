@@ -2,6 +2,19 @@ import { useEffect, useState, type JSX } from 'react'
 import { headingText, isHeading, type Recipe } from '../../../shared/types'
 import type { Notice } from '../App'
 
+function PencilIcon(): JSX.Element {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="none">
+      <path
+        d="M11.4 2.3l2.3 2.3-7.4 7.4-3 .7.7-3z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 interface Props {
   recipe: Recipe
   folders: string[]
@@ -26,6 +39,8 @@ export default function RecipeView({
   const [editingNotes, setEditingNotes] = useState(false)
   const [busy, setBusy] = useState<'print' | 'pdf' | null>(null)
   const [folder, setFolder] = useState(recipe.folder ?? '')
+  const [sourceName, setSourceName] = useState(recipe.sourceName ?? '')
+  const [editingSource, setEditingSource] = useState(false)
 
   const fail = (error: unknown): void =>
     onNotice({ tone: 'error', text: error instanceof Error ? error.message : String(error) })
@@ -36,7 +51,16 @@ export default function RecipeView({
     setNotes(recipe.notes ?? '')
     setEditingNotes(false)
     setFolder(recipe.folder ?? '')
-  }, [recipe.id, recipe.notes, recipe.folder])
+    setSourceName(recipe.sourceName ?? '')
+    setEditingSource(false)
+  }, [recipe.id, recipe.notes, recipe.folder, recipe.sourceName])
+
+  const commitSource = (): void => {
+    setEditingSource(false)
+    const next = sourceName.trim()
+    if (next === (recipe.sourceName ?? '')) return
+    onSave({ ...recipe, sourceName: next || undefined })
+  }
 
   const commitFolder = (): void => {
     const next = folder.trim()
@@ -67,19 +91,53 @@ export default function RecipeView({
       <header className="recipe__header">
         <h1 className="recipe__title">{recipe.title}</h1>
 
-        {recipe.sourceUrl && (
-          <p className="recipe__source">
-            <a
-              href={recipe.sourceUrl}
-              onClick={(event) => {
-                event.preventDefault()
-                void window.api.openExternal(recipe.sourceUrl!)
+        {/* Editable whether or not the recipe came with a source name — a
+            pasted recipe has none, and sites often give an unhelpful one. */}
+        <p className="recipe__source">
+          {editingSource || !recipe.sourceName ? (
+            <input
+              className="source__input"
+              value={sourceName}
+              placeholder="Add a source"
+              aria-label="Source name"
+              spellCheck={false}
+              autoFocus={editingSource}
+              onChange={(event) => setSourceName(event.target.value)}
+              onBlur={commitSource}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') event.currentTarget.blur()
+                if (event.key === 'Escape') {
+                  setSourceName(recipe.sourceName ?? '')
+                  setEditingSource(false)
+                }
               }}
-            >
-              {recipe.sourceName ?? recipe.sourceUrl}
-            </a>
-          </p>
-        )}
+            />
+          ) : (
+            <>
+              {recipe.sourceUrl ? (
+                <a
+                  href={recipe.sourceUrl}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void window.api.openExternal(recipe.sourceUrl!)
+                  }}
+                >
+                  {recipe.sourceName}
+                </a>
+              ) : (
+                <span className="source__name">{recipe.sourceName}</span>
+              )}
+              <button
+                className="source__edit"
+                onClick={() => setEditingSource(true)}
+                title="Edit source name"
+                aria-label="Edit source name"
+              >
+                <PencilIcon />
+              </button>
+            </>
+          )}
+        </p>
 
         {meta.length > 0 && (
           <ul className="recipe__meta">
