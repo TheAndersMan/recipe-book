@@ -3,8 +3,14 @@ import { headingText, isHeading, type Recipe } from '../../../shared/types'
 import type { Notice } from '../App'
 import AutoTextarea from './AutoTextarea'
 
-/** Which list is open for editing, if any. */
+/** The two lists that can be edited as text. */
 type ListField = 'ingredients' | 'instructions'
+
+/**
+ * At most one editor is open at a time. Opening a second would leave two sets
+ * of unsaved edits on screen with no indication which Save applies to which.
+ */
+type EditTarget = 'title' | 'source' | 'description' | 'notes' | ListField | null
 
 /**
  * Save / Cancel for every inline editor. Clicking away deliberately does
@@ -122,35 +128,56 @@ export default function RecipeView({
   onRename
 }: Props): JSX.Element {
   const [checked, setChecked] = useState<Set<number>>(new Set())
-  const [notes, setNotes] = useState(recipe.notes ?? '')
-  const [editingNotes, setEditingNotes] = useState(false)
   const [busy, setBusy] = useState<'print' | 'pdf' | null>(null)
   const [folder, setFolder] = useState(recipe.folder ?? '')
+  const [editing, setEditing] = useState<EditTarget>(null)
+
+  // Drafts, all discarded whenever the open editor changes.
+  const [notes, setNotes] = useState(recipe.notes ?? '')
   const [sourceName, setSourceName] = useState(recipe.sourceName ?? '')
-  const [editingSource, setEditingSource] = useState(false)
   const [title, setTitle] = useState(recipe.title)
-  const [editingTitle, setEditingTitle] = useState(false)
   const [description, setDescription] = useState(recipe.description ?? '')
-  const [editingDescription, setEditingDescription] = useState(false)
-  const [editingList, setEditingList] = useState<ListField | null>(null)
   const [listText, setListText] = useState('')
 
   const fail = (error: unknown): void =>
     onNotice({ tone: 'error', text: error instanceof Error ? error.message : String(error) })
 
+  /** Throws away every in-progress draft, back to what's on disk. */
+  const resetDrafts = (): void => {
+    setNotes(recipe.notes ?? '')
+    setSourceName(recipe.sourceName ?? '')
+    setTitle(recipe.title)
+    setDescription(recipe.description ?? '')
+  }
+
+  /**
+   * Switching editors discards the one that was open, matching what clicking
+   * away already does — the alternative is silently saving an edit the user
+   * moved on from.
+   */
+  const openEditor = (target: EditTarget): void => {
+    resetDrafts()
+    // Lists are one entry per line; group headings keep the "# " they carry.
+    if (target === 'ingredients' || target === 'instructions') {
+      setListText(recipe[target].join('\n'))
+    }
+    setEditing(target)
+  }
+
+  const closeEditor = (): void => {
+    resetDrafts()
+    setEditing(null)
+  }
+
   // Reset per-recipe state whenever a different recipe is opened.
   useEffect(() => {
     setChecked(new Set())
-    setNotes(recipe.notes ?? '')
-    setEditingNotes(false)
     setFolder(recipe.folder ?? '')
+    setEditing(null)
+    setNotes(recipe.notes ?? '')
     setSourceName(recipe.sourceName ?? '')
-    setEditingSource(false)
     setTitle(recipe.title)
-    setEditingTitle(false)
     setDescription(recipe.description ?? '')
-    setEditingDescription(false)
-    setEditingList(null)
   }, [
     recipe.id,
     recipe.notes,
@@ -160,14 +187,8 @@ export default function RecipeView({
     recipe.description
   ])
 
-  const openList = (field: ListField): void => {
-    // One entry per line; group headings keep the "# " they already carry.
-    setListText(recipe[field].join('\n'))
-    setEditingList(field)
-  }
-
   const commitList = (field: ListField): void => {
-    setEditingList(null)
+    setEditing(null)
     const entries = listText
       .split('\n')
       .map((line) => line.trim())
@@ -181,25 +202,15 @@ export default function RecipeView({
     }
   }
 
-  const cancelDescription = (): void => {
-    setDescription(recipe.description ?? '')
-    setEditingDescription(false)
-  }
-
   const commitDescription = (): void => {
-    setEditingDescription(false)
+    setEditing(null)
     const next = description.trim()
     if (next === (recipe.description ?? '')) return
     onSave({ ...recipe, description: next || undefined })
   }
 
-  const cancelTitle = (): void => {
-    setTitle(recipe.title)
-    setEditingTitle(false)
-  }
-
   const commitTitle = (): void => {
-    setEditingTitle(false)
+    setEditing(null)
     const next = title.trim()
     // A recipe with no title would have nothing to file it under, so an empty
     // field reverts rather than saving.
@@ -210,16 +221,18 @@ export default function RecipeView({
     if (next !== recipe.title) onRename(recipe.id, next)
   }
 
-  const cancelSource = (): void => {
-    setSourceName(recipe.sourceName ?? '')
-    setEditingSource(false)
-  }
-
   const commitSource = (): void => {
-    setEditingSource(false)
+    setEditing(null)
     const next = sourceName.trim()
     if (next === (recipe.sourceName ?? '')) return
     onSave({ ...recipe, sourceName: next || undefined })
+  }
+
+  const commitNotes = (): void => {
+    setEditing(null)
+    const next = notes.trim()
+    if (next === (recipe.notes ?? '')) return
+    onSave({ ...recipe, notes: next || undefined })
   }
 
   const commitFolder = (): void => {
@@ -249,7 +262,7 @@ export default function RecipeView({
   return (
     <article className="recipe">
       <header className="recipe__header">
-        {editingTitle ? (
+        {editing === 'title' ? (
           <div className="editing-block">
             <input
               className="recipe__title title__input"
@@ -260,17 +273,17 @@ export default function RecipeView({
               onChange={(event) => setTitle(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') commitTitle()
-                if (event.key === 'Escape') cancelTitle()
+                if (event.key === 'Escape') closeEditor()
               }}
             />
-            <EditActions onSave={commitTitle} onCancel={cancelTitle} />
+            <EditActions onSave={commitTitle} onCancel={closeEditor} />
           </div>
         ) : (
           <div className="title__row">
             <h1 className="recipe__title">{recipe.title}</h1>
             <button
               className="title__edit no-print"
-              onClick={() => setEditingTitle(true)}
+              onClick={() => openEditor('title')}
               title="Rename recipe"
               aria-label="Rename recipe"
             >
@@ -282,7 +295,7 @@ export default function RecipeView({
         {/* Editable whether or not the recipe came with a source name — a
             pasted recipe has none, and sites often give an unhelpful one. */}
         <p className="recipe__source">
-          {editingSource || !recipe.sourceName ? (
+          {editing === 'source' || !recipe.sourceName ? (
             <span className="editing-inline">
               <input
                 className="source__input"
@@ -290,16 +303,16 @@ export default function RecipeView({
                 placeholder="Add a source"
                 aria-label="Source name"
                 spellCheck={false}
-                autoFocus={editingSource}
+                autoFocus={editing === 'source'}
                 // Typing into the empty-state field is what opens the editor.
-                onFocus={() => setEditingSource(true)}
+                onFocus={() => editing !== 'source' && openEditor('source')}
                 onChange={(event) => setSourceName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') commitSource()
-                  if (event.key === 'Escape') cancelSource()
+                  if (event.key === 'Escape') closeEditor()
                 }}
               />
-              {editingSource && <EditActions onSave={commitSource} onCancel={cancelSource} />}
+              {editing === 'source' && <EditActions onSave={commitSource} onCancel={closeEditor} />}
             </span>
           ) : (
             <>
@@ -318,7 +331,7 @@ export default function RecipeView({
               )}
               <button
                 className="source__edit"
-                onClick={() => setEditingSource(true)}
+                onClick={() => openEditor('source')}
                 title="Edit source name"
                 aria-label="Edit source name"
               >
@@ -336,7 +349,7 @@ export default function RecipeView({
           </ul>
         )}
 
-        {editingDescription || !recipe.description ? (
+        {editing === 'description' || !recipe.description ? (
           /* Editing, or nothing written yet. Never printed — an empty box on
              paper is worse than no description at all. */
           <div className="editing-block no-print">
@@ -345,17 +358,17 @@ export default function RecipeView({
               value={description}
               placeholder="Add a description"
               ariaLabel="Description"
-              autoFocus={editingDescription}
-              onFocus={() => setEditingDescription(true)}
+              autoFocus={editing === 'description'}
+              onFocus={() => editing !== 'description' && openEditor('description')}
               onChange={setDescription}
               onKeyDown={(event) => {
                 // Enter breaks the line here, so Cmd/Ctrl+Enter saves instead.
-                if (event.key === 'Escape') cancelDescription()
+                if (event.key === 'Escape') closeEditor()
                 if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) commitDescription()
               }}
             />
-            {editingDescription && (
-              <EditActions onSave={commitDescription} onCancel={cancelDescription} />
+            {editing === 'description' && (
+              <EditActions onSave={commitDescription} onCancel={closeEditor} />
             )}
           </div>
         ) : (
@@ -363,7 +376,7 @@ export default function RecipeView({
             <p className="recipe__description">{recipe.description}</p>
             <button
               className="description__edit no-print"
-              onClick={() => setEditingDescription(true)}
+              onClick={() => openEditor('description')}
               title="Edit description"
               aria-label="Edit description"
             >
@@ -470,10 +483,10 @@ export default function RecipeView({
         <section className="recipe__ingredients">
           <div className="section__head">
             <h2>Ingredients</h2>
-            {editingList !== 'ingredients' && (
+            {editing !== 'ingredients' && (
               <button
                 className="section__edit no-print"
-                onClick={() => openList('ingredients')}
+                onClick={() => openEditor('ingredients')}
                 title="Edit ingredients"
                 aria-label="Edit ingredients"
               >
@@ -482,12 +495,12 @@ export default function RecipeView({
             )}
           </div>
 
-          {editingList === 'ingredients' ? (
+          {editing === 'ingredients' ? (
             <ListEditor
               value={listText}
               onChange={setListText}
               onCommit={() => commitList('ingredients')}
-              onCancel={() => setEditingList(null)}
+              onCancel={closeEditor}
               label="Ingredients"
             />
           ) : (
@@ -518,10 +531,10 @@ export default function RecipeView({
         <section className="recipe__instructions">
           <div className="section__head">
             <h2>Instructions</h2>
-            {editingList !== 'instructions' && (
+            {editing !== 'instructions' && (
               <button
                 className="section__edit no-print"
-                onClick={() => openList('instructions')}
+                onClick={() => openEditor('instructions')}
                 title="Edit instructions"
                 aria-label="Edit instructions"
               >
@@ -530,12 +543,12 @@ export default function RecipeView({
             )}
           </div>
 
-          {editingList === 'instructions' ? (
+          {editing === 'instructions' ? (
             <ListEditor
               value={listText}
               onChange={setListText}
               onCommit={() => commitList('instructions')}
-              onCancel={() => setEditingList(null)}
+              onCancel={closeEditor}
               label="Instructions"
             />
           ) : (
@@ -566,35 +579,21 @@ export default function RecipeView({
           an empty heading is just clutter on paper. */}
       <section className={`recipe__notes${recipe.notes ? '' : ' no-print'}`}>
         <h2>Notes</h2>
-        {editingNotes ? (
-          <>
-            <textarea
+        {editing === 'notes' ? (
+          <div className="editing-block no-print">
+            <AutoTextarea
               className="notes__editor"
               value={notes}
-              rows={6}
-              onChange={(event) => setNotes(event.target.value)}
+              ariaLabel="Notes"
+              autoFocus
+              onChange={setNotes}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') closeEditor()
+                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) commitNotes()
+              }}
             />
-            <div className="recipe__actions no-print">
-              <button
-                className="button button--primary"
-                onClick={() => {
-                  onSave({ ...recipe, notes: notes.trim() || undefined })
-                  setEditingNotes(false)
-                }}
-              >
-                Save notes
-              </button>
-              <button
-                className="button"
-                onClick={() => {
-                  setNotes(recipe.notes ?? '')
-                  setEditingNotes(false)
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </>
+            <EditActions onSave={commitNotes} onCancel={closeEditor} />
+          </div>
         ) : (
           <>
             {recipe.notes ? (
@@ -605,7 +604,7 @@ export default function RecipeView({
               </p>
             )}
             <div className="recipe__actions no-print">
-              <button className="button" onClick={() => setEditingNotes(true)}>
+              <button className="button" onClick={() => openEditor('notes')}>
                 {recipe.notes ? 'Edit notes' : 'Add notes'}
               </button>
             </div>

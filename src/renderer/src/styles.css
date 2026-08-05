@@ -961,10 +961,11 @@ select {
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--card);
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   outline: none;
   line-height: 1.55;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .notes__editor:focus {
