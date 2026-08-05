@@ -660,7 +660,7 @@ select {
 .description__input {
   display: block;
   width: 100%;
-  margin: 0 0 20px;
+  margin: 0;
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -809,14 +809,46 @@ select {
   outline: none;
 }
 
-.list-editor__hint {
-  margin: 7px 0 0;
+/* ---------- inline editing ---------- */
+
+.editing-block {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.editing-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+
+/* The source editor sits on one line, so its buttons shouldn't drop below. */
+.editing-inline .edit-actions {
+  margin-top: 0;
+}
+
+.button--small {
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 12.5px;
+}
+
+.edit-actions__hint {
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--ink-soft);
 }
 
-.list-editor__hint code {
+.edit-actions__hint code {
   padding: 1px 4px;
   border-radius: 4px;
   background: var(--accent-soft);

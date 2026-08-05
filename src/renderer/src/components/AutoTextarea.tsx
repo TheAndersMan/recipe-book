@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, type JSX, type KeyboardEvent } from 'react'
 interface Props {
   value: string
   onChange: (value: string) => void
-  onBlur: () => void
+  onFocus?: () => void
   onKeyDown?: (event: KeyboardEvent<HTMLTextAreaElement>) => void
   className?: string
   placeholder?: string
@@ -22,7 +22,7 @@ interface Props {
 export default function AutoTextarea({
   value,
   onChange,
-  onBlur,
+  onFocus,
   onKeyDown,
   className,
   placeholder,
@@ -48,7 +48,7 @@ export default function AutoTextarea({
       autoFocus={autoFocus}
       rows={1}
       onChange={(event) => onChange(event.target.value)}
-      onBlur={onBlur}
+      onFocus={onFocus}
       onKeyDown={onKeyDown}
     />
   )

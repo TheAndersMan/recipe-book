@@ -7,6 +7,43 @@ import AutoTextarea from './AutoTextarea'
 type ListField = 'ingredients' | 'instructions'
 
 /**
+ * Save / Cancel for every inline editor. Clicking away deliberately does
+ * nothing: it reads as backing out, so treating it as a save loses edits the
+ * other way round — an accidental change committed instead of discarded.
+ */
+function EditActions({
+  onSave,
+  onCancel,
+  hint
+}: {
+  onSave: () => void
+  onCancel: () => void
+  hint?: JSX.Element
+}): JSX.Element {
+  return (
+    <div className="edit-actions no-print">
+      {/* mousedown default is what blurs the field; suppressing it means the
+          click still lands on a focused editor. */}
+      <button
+        className="button button--primary button--small"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onSave}
+      >
+        Save
+      </button>
+      <button
+        className="button button--small"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onCancel}
+      >
+        Cancel
+      </button>
+      {hint && <span className="edit-actions__hint">{hint}</span>}
+    </div>
+  )
+}
+
+/**
  * Lists are edited as plain text, one entry per line. It's the same shape as
  * the stored markdown, so deleting a whole section is selecting a few lines —
  * far quicker than per-row controls, and reordering comes free.
@@ -32,14 +69,20 @@ function ListEditor({
         ariaLabel={`${label}, one per line`}
         autoFocus
         onChange={onChange}
-        onBlur={onCommit}
         onKeyDown={(event) => {
           if (event.key === 'Escape') onCancel()
+          if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) onCommit()
         }}
       />
-      <p className="list-editor__hint">
-        One per line. Start a line with <code>#</code> to make it a heading. Esc to cancel.
-      </p>
+      <EditActions
+        onSave={onCommit}
+        onCancel={onCancel}
+        hint={
+          <>
+            One per line. Start a line with <code>#</code> for a heading.
+          </>
+        }
+      />
     </div>
   )
 }
@@ -138,11 +181,21 @@ export default function RecipeView({
     }
   }
 
+  const cancelDescription = (): void => {
+    setDescription(recipe.description ?? '')
+    setEditingDescription(false)
+  }
+
   const commitDescription = (): void => {
     setEditingDescription(false)
     const next = description.trim()
     if (next === (recipe.description ?? '')) return
     onSave({ ...recipe, description: next || undefined })
+  }
+
+  const cancelTitle = (): void => {
+    setTitle(recipe.title)
+    setEditingTitle(false)
   }
 
   const commitTitle = (): void => {
@@ -155,6 +208,11 @@ export default function RecipeView({
       return
     }
     if (next !== recipe.title) onRename(recipe.id, next)
+  }
+
+  const cancelSource = (): void => {
+    setSourceName(recipe.sourceName ?? '')
+    setEditingSource(false)
   }
 
   const commitSource = (): void => {
@@ -192,22 +250,21 @@ export default function RecipeView({
     <article className="recipe">
       <header className="recipe__header">
         {editingTitle ? (
-          <input
-            className="recipe__title title__input"
-            value={title}
-            aria-label="Recipe title"
-            spellCheck={false}
-            autoFocus
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur()
-              if (event.key === 'Escape') {
-                setTitle(recipe.title)
-                setEditingTitle(false)
-              }
-            }}
-          />
+          <div className="editing-block">
+            <input
+              className="recipe__title title__input"
+              value={title}
+              aria-label="Recipe title"
+              spellCheck={false}
+              autoFocus
+              onChange={(event) => setTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') commitTitle()
+                if (event.key === 'Escape') cancelTitle()
+              }}
+            />
+            <EditActions onSave={commitTitle} onCancel={cancelTitle} />
+          </div>
         ) : (
           <div className="title__row">
             <h1 className="recipe__title">{recipe.title}</h1>
@@ -226,23 +283,24 @@ export default function RecipeView({
             pasted recipe has none, and sites often give an unhelpful one. */}
         <p className="recipe__source">
           {editingSource || !recipe.sourceName ? (
-            <input
-              className="source__input"
-              value={sourceName}
-              placeholder="Add a source"
-              aria-label="Source name"
-              spellCheck={false}
-              autoFocus={editingSource}
-              onChange={(event) => setSourceName(event.target.value)}
-              onBlur={commitSource}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') event.currentTarget.blur()
-                if (event.key === 'Escape') {
-                  setSourceName(recipe.sourceName ?? '')
-                  setEditingSource(false)
-                }
-              }}
-            />
+            <span className="editing-inline">
+              <input
+                className="source__input"
+                value={sourceName}
+                placeholder="Add a source"
+                aria-label="Source name"
+                spellCheck={false}
+                autoFocus={editingSource}
+                // Typing into the empty-state field is what opens the editor.
+                onFocus={() => setEditingSource(true)}
+                onChange={(event) => setSourceName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') commitSource()
+                  if (event.key === 'Escape') cancelSource()
+                }}
+              />
+              {editingSource && <EditActions onSave={commitSource} onCancel={cancelSource} />}
+            </span>
           ) : (
             <>
               {recipe.sourceUrl ? (
@@ -281,22 +339,25 @@ export default function RecipeView({
         {editingDescription || !recipe.description ? (
           /* Editing, or nothing written yet. Never printed — an empty box on
              paper is worse than no description at all. */
-          <AutoTextarea
-            className="description__input no-print"
-            value={description}
-            placeholder="Add a description"
-            ariaLabel="Description"
-            autoFocus={editingDescription}
-            onChange={setDescription}
-            onBlur={commitDescription}
-            onKeyDown={(event) => {
-              // Enter inserts a line break here; Escape backs out.
-              if (event.key === 'Escape') {
-                setDescription(recipe.description ?? '')
-                setEditingDescription(false)
-              }
-            }}
-          />
+          <div className="editing-block no-print">
+            <AutoTextarea
+              className="description__input"
+              value={description}
+              placeholder="Add a description"
+              ariaLabel="Description"
+              autoFocus={editingDescription}
+              onFocus={() => setEditingDescription(true)}
+              onChange={setDescription}
+              onKeyDown={(event) => {
+                // Enter breaks the line here, so Cmd/Ctrl+Enter saves instead.
+                if (event.key === 'Escape') cancelDescription()
+                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) commitDescription()
+              }}
+            />
+            {editingDescription && (
+              <EditActions onSave={commitDescription} onCancel={cancelDescription} />
+            )}
+          </div>
         ) : (
           <div className="description__row">
             <p className="recipe__description">{recipe.description}</p>
