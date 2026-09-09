@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio'
 import type { ExtractionMethod, Recipe } from '../../shared/types'
 import { fromClaude, NoRecipeFoundError } from './claude'
 import { collapse, normalizeYield, pageText, siteName } from './html'
+import { fetchInstagramPost, isInstagramUrl } from './instagram'
 import { fromJsonLd, type RawRecipe } from './jsonld'
 import { fromMicrodata } from './microdata'
 
@@ -26,6 +27,11 @@ export interface Extraction {
 
 export async function extractFromUrl(url: string, options: ExtractOptions): Promise<Extraction> {
   const normalized = normalizeUrl(url)
+
+  // Instagram never carries structured data, so it gets its own path rather
+  // than falling through a ladder that cannot possibly match.
+  if (isInstagramUrl(normalized)) return fromInstagram(normalized, options)
+
   const html = await fetchPage(normalized)
   const $ = cheerio.load(html)
 
@@ -62,6 +68,72 @@ export async function extractFromUrl(url: string, options: ExtractOptions): Prom
     recipe: { ...assemble(raw, $, normalized, 'claude'), notes: raw.notes },
     method: 'claude',
     note: 'No structured recipe data on that page, so this one went through Claude — worth a quick read to check it.'
+  }
+}
+
+/**
+ * Instagram's caption is the recipe, when the creator put it there. When they
+ * didn't, they have usually linked it instead — so a caption Claude can't make
+ * a recipe out of falls back to following that link through the normal ladder,
+ * which reads the blog's own structured data and gets a better result than any
+ * caption would have given.
+ */
+async function fromInstagram(url: string, options: ExtractOptions): Promise<Extraction> {
+  const post = await fetchInstagramPost(url)
+
+  if (!options.apiKey) {
+    throw new Error(
+      'Reading an Instagram caption needs the Claude fallback. Add an API key in Settings, or paste the caption text instead.'
+    )
+  }
+
+  try {
+    const raw = await fromClaude(post.caption, {
+      apiKey: options.apiKey,
+      model: options.model,
+      sourceUrl: url
+    })
+
+    return {
+      recipe: {
+        title: raw.title?.trim() || 'Untitled recipe',
+        description: raw.description,
+        ingredients: raw.ingredients,
+        instructions: raw.instructions,
+        prepTime: raw.prepTime,
+        cookTime: raw.cookTime,
+        totalTime: raw.totalTime,
+        yield: normalizeYield(raw.yield),
+        sourceUrl: url,
+        sourceName: post.author ?? 'Instagram',
+        imageUrl: post.imageUrl,
+        notes: raw.notes,
+        tags: raw.tags,
+        favorite: false,
+        savedAt: new Date().toISOString(),
+        extractedBy: 'claude'
+      },
+      method: 'claude',
+      note: raw.instructions.length
+        ? 'Read from the Instagram caption — worth a quick read to check it.'
+        : 'The caption listed ingredients but no method, so the steps are empty — add them from the video.'
+    }
+  } catch (error) {
+    if (!(error instanceof NoRecipeFoundError)) throw error
+
+    // No recipe in the caption. If it points at one, follow that instead.
+    const link = post.links[0]
+    if (!link) {
+      throw new NoRecipeFoundError(
+        "That caption doesn't contain the recipe — it's probably in the video or sent by DM. Copy the recipe text and paste it instead."
+      )
+    }
+
+    const followed = await extractFromUrl(link, options)
+    return {
+      ...followed,
+      note: `That caption didn't have the recipe, so this came from the link in it (${hostOf(link) ?? link}).`
+    }
   }
 }
 
