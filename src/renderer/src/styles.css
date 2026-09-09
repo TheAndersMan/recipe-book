@@ -1169,6 +1169,65 @@ select {
   border-color: var(--accent);
 }
 
+/* ---------- scaling ---------- */
+
+.scale {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+.scale__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.scale__steps {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.scale__step {
+  padding: 5px 11px;
+  border: none;
+  border-right: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scale__step:last-child {
+  border-right: none;
+}
+
+.scale__step:hover {
+  background: var(--chip-hover);
+  color: var(--ink);
+}
+
+.scale__step--active {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.scale__badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
 /* ---------- print (also drives PDF export) ---------- */
 
 @media print {
@@ -1254,6 +1313,17 @@ select {
   }
 
   .recipe__meta li {
+    border: 1px solid #999;
+    font-size: 8pt;
+    padding: 2px 7px;
+  }
+
+  /* The control itself is no-print; the badge stays so a scaled sheet says so. */
+  .scale {
+    margin-bottom: 10px;
+  }
+
+  .scale__badge {
     border: 1px solid #999;
     font-size: 8pt;
     padding: 2px 7px;

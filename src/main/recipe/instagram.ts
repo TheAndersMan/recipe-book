@@ -99,17 +99,17 @@ export function stripPreamble(description: string): string {
 }
 
 /**
- * Display name, preferred over the handle — "Caitlyn Sullivan" reads better in
- * a recipe list than "cookingwithcaitlynskitchen". Falls back to the handle.
+ * The handle, not the display name. "Caitlyn Sullivan" reads more nicely but
+ * you cannot search for it — "@cookingwithcaitlynskitchen" takes you straight
+ * to the account for the rest of their recipes.
  */
 function authorFrom(title: string | undefined, description: string): string | undefined {
-  const named = title && /^(.+?)\s+on Instagram\s*:/.exec(title)
-  if (named) {
-    const name = collapse(named[1])
-    if (name) return name
-  }
   const handle = /-\s+([A-Za-z0-9._]+)\s+on\s+\w+\s+\d/.exec(description)
-  return handle ? handle[1] : undefined
+  if (handle) return `@${handle[1]}`
+
+  const named = title && /^(.+?)\s+on Instagram\s*:/.exec(title)
+  const name = named && collapse(named[1])
+  return name || undefined
 }
 
 /**

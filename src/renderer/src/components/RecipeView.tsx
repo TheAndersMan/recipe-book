@@ -1,7 +1,17 @@
 import { useEffect, useState, type JSX } from 'react'
 import { headingText, isHeading, type Recipe } from '../../../shared/types'
 import type { Notice } from '../App'
+import {
+  formatFactor,
+  hasScalableQuantity,
+  scaleIngredient,
+  scaleInstruction,
+  scaleYield
+} from '../../../shared/scale'
 import AutoTextarea from './AutoTextarea'
+
+/** Offered scale factors. Half and double are the ones people actually want. */
+const SCALE_STEPS = [0.5, 1, 1.5, 2, 3]
 
 /** The two lists that can be edited as text. */
 type ListField = 'ingredients' | 'instructions'
@@ -131,6 +141,8 @@ export default function RecipeView({
   const [busy, setBusy] = useState<'print' | 'pdf' | null>(null)
   const [folder, setFolder] = useState(recipe.folder ?? '')
   const [editing, setEditing] = useState<EditTarget>(null)
+  /** Display-only: the stored recipe is always the original. */
+  const [scale, setScale] = useState(1)
 
   // Drafts, all discarded whenever the open editor changes.
   const [notes, setNotes] = useState(recipe.notes ?? '')
@@ -157,8 +169,10 @@ export default function RecipeView({
    */
   const openEditor = (target: EditTarget): void => {
     resetDrafts()
-    // Lists are one entry per line; group headings keep the "# " they carry.
     if (target === 'ingredients' || target === 'instructions') {
+      // Editors always show the stored amounts, never a scaled view of them.
+      setScale(1)
+      // Lists are one entry per line; group headings keep the "# " they carry.
       setListText(recipe[target].join('\n'))
     }
     setEditing(target)
@@ -174,6 +188,7 @@ export default function RecipeView({
     setChecked(new Set())
     setFolder(recipe.folder ?? '')
     setEditing(null)
+    setScale(1)
     setNotes(recipe.notes ?? '')
     setSourceName(recipe.sourceName ?? '')
     setTitle(recipe.title)
@@ -254,8 +269,10 @@ export default function RecipeView({
     recipe.prepTime && `Prep ${recipe.prepTime}`,
     recipe.cookTime && `Cook ${recipe.cookTime}`,
     recipe.totalTime && `Total ${recipe.totalTime}`,
-    recipe.yield
+    scaleYield(recipe.yield, scale)
   ].filter(Boolean) as string[]
+
+  const scalable = hasScalableQuantity(recipe.ingredients)
 
   let stepNumber = 0
 
@@ -347,6 +364,28 @@ export default function RecipeView({
               <li key={entry}>{entry}</li>
             ))}
           </ul>
+        )}
+
+        {scalable && (
+          <div className="scale">
+            <span className="scale__label no-print">Scale</span>
+            <div className="scale__steps no-print">
+              {SCALE_STEPS.map((step) => (
+                <button
+                  key={step}
+                  className={`scale__step${step === scale ? ' scale__step--active' : ''}`}
+                  onClick={() => setScale(step)}
+                  aria-pressed={step === scale}
+                >
+                  {formatFactor(step)}
+                </button>
+              ))}
+            </div>
+            {/* The only part that prints, so a scaled printout says so. */}
+            {scale !== 1 && (
+              <span className="scale__badge">Scaled {formatFactor(scale)}</span>
+            )}
+          </div>
         )}
 
         {editing === 'description' || !recipe.description ? (
@@ -519,7 +558,7 @@ export default function RecipeView({
                       checked={checked.has(index)}
                       onChange={() => toggle(index)}
                     />
-                    <span>{entry}</span>
+                    <span>{scaleIngredient(entry, scale)}</span>
                   </label>
                 </li>
               )
@@ -566,7 +605,7 @@ export default function RecipeView({
               return (
                 <li key={index} className="step">
                   <span className="step__number">{stepNumber}</span>
-                  <span className="step__text">{entry}</span>
+                  <span className="step__text">{scaleInstruction(entry, scale)}</span>
                 </li>
               )
             })}
