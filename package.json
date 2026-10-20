@@ -4,7 +4,7 @@
   "description": "Pull recipes off any page and keep them as clean, printable markdown",
   "main": "./out/main/index.js",
   "author": "Anders Rasmusson",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",

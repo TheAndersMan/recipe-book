@@ -71,6 +71,27 @@ Three rungs, tried in order. Most URLs stop at the first.
 serve the page. Copy the recipe text, hit *Paste text*, and it goes straight to
 rung 3.
 
+### Instagram
+
+Reels and posts take their own path, since Instagram never carries structured
+data and the ladder above cannot possibly match. The recipe, when there is one,
+is in the caption.
+
+Instagram does not put the caption in the HTML it serves a browser — it is
+rendered client-side behind a login wall. It *does* put the full caption in an
+`og:description` meta tag for link-preview crawlers, which is how a shared link
+shows a snippet in a chat app. `src/main/recipe/instagram.ts` asks for the page
+as `facebookexternalhit/1.1` and reads that tag. No cookies, no session, no
+headless browser.
+
+The caption then goes to Claude like any pasted text. If there is no recipe in
+it — plenty of creators say "recipe in bio" — the first link in the caption is
+followed back through the normal ladder, which usually lands on the creator's
+own blog post and gets a better result than the caption would have.
+
+The source is recorded as the creator's handle (`@someone`) rather than their
+display name, because the handle is what takes you back to the account.
+
 ## Storage
 
 One markdown file per recipe in the recipe folder (default
@@ -131,6 +152,36 @@ sorts last rather than pretending to be zero. See `renderer/src/sorting.ts`.
 Stored encrypted via Electron's `safeStorage`, which on macOS is backed by the
 login Keychain. It never lands in a recipe file and is never sent to the
 renderer — the UI only learns whether one exists.
+
+## Scaling
+
+A row of steps under the recipe meta (half, 1x, 1.5x, double, triple) rescales
+the displayed amounts. It is display-only: the stored markdown always holds the
+original, so there is no state to get wrong and nothing to undo. Opening an
+ingredient or instruction editor snaps back to 1x, since the editor shows what
+is on disk.
+
+The whole problem is telling a quantity from a number that merely looks like
+one. `src/shared/scale.ts` scales a number only when it is the leading quantity
+of an ingredient line, or is directly followed by a unit of measure. Time,
+temperature and length are deliberately not units, which is what keeps these
+intact:
+
+- `1 cup warm water ((105 degrees F))` - the 105
+- `Heat 1 1/2 inches of oil ... to 375 degrees` - both numbers
+- `Air fry for 4-5 minutes`
+- `2 (10 oz each) chicken breasts` - the per-item size, flagged by "each"
+
+A parenthetical that restates the amount does scale (`1/2 cup (2.5 oz) flour`),
+and ranges scale on both ends. Input may be `1/4`, a vulgar fraction, `1 1/2`
+or a decimal; output is snapped to the nearest eighth and rendered as a proper
+fraction. Units agree with the new amount (`2 teaspoons` halved is
+`1 teaspoon`), with abbreviations left alone - depluralising `tsp` gives `tp`.
+Ingredient nouns are not pluralised, so halving `2 eggs` reads `1 eggs`;
+guessing plurals for arbitrary nouns is wrong more often than it is right.
+
+A scaled printout carries a `Scaled 2x` badge, so a page that came off the
+printer at double says so.
 
 ## Printing and PDF
 
@@ -253,3 +304,7 @@ src/
 
 No HTTP server: Electron's main process is Node, so it fetches recipe pages
 directly. CORS is a browser restriction and never enters the picture.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
