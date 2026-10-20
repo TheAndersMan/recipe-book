@@ -12,7 +12,7 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "icon": "node scripts/make-icon.mjs && iconutil -c icns build/icon.iconset -o build/icon.icns",
-    "package": "npm run icon && electron-vite build && electron-builder --mac --arm64"
+    "package": "npm run icon && electron-vite build && electron-builder --mac --arm64 && node scripts/install-app.mjs"
   },
   "build": {
     "appId": "com.lrn2diy.recipebook",
